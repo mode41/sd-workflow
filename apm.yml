@@ -1,0 +1,39 @@
+# Spec-Driven Development workflow — agent-agnostic APM package.
+#
+# NOTE: `targets:` is deliberately OMITTED so APM auto-detects whichever harness
+# markers the consumer repo actually has (.claude/, .opencode/, .cursor/, .github/, …)
+# and deploys the shared primitives only to those. A consumer may pin `targets:` or use
+# `--target` if they want to override auto-detection.
+name: spec-driven-workflow
+version: 1.0.0
+description: >-
+  Agent-agnostic Spec-Driven Development workflow — spec lifecycle, versioning,
+  reviewer agents, security rules, and self-enforcing git + per-harness hooks.
+  One source of truth; APM compiles the shared primitives into whichever agent
+  harness a project uses.
+author: mode41
+license: MIT
+
+# Records explicit consent to deploy/pack local .apm/ content.
+includes: auto
+
+# init-and-wire.sh is our own seeder + PER-AGENT COMPILER: idempotent; seeds live files only if
+# absent, deploys the enforcement machinery into a committed .spec-workflow/ dir, detect-and-
+# preserves core.hooksPath, and emits each present harness's native finish hook. (We do NOT use
+# APM's hook primitive — its hook compilation is unreliable today.)
+#
+# IMPORTANT (verified on APM 0.25.0): this lifecycle block only fires when THIS package is the
+# project you run `apm install` in (self/dev install), and only after `apm lifecycle trust`. When a
+# consumer installs this package as a DEPENDENCY, APM deploys the primitives but does NOT run this
+# block — so consumers run the bootstrap explicitly (see README "Install", step 2). That explicit,
+# readable step is the consent gate; the script is dependency-free and does no network access.
+lifecycle:
+  post-install:
+  - type: command
+    description: 'Seed spec-workflow living files, deploy enforcement hooks, wire git + per-harness finish hooks (idempotent).'
+    command: 'bash .apm/scripts/init-and-wire.sh'
+    timeoutSec: 60
+
+dependencies:
+  apm: []
+  mcp: []

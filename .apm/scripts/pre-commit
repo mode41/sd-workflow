@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+# Agent-independent spec-workflow gate (git pre-commit) — the AGENT-AGNOSTIC enforcement floor.
+# Runs the SAME shared checks as the per-harness finish-boundary hooks, so a commit from ANY tool
+# (Claude Code, opencode, Cursor, a plain editor) or a human is blocked when a SPEC-* spec's
+# acceptance criteria, status, or version have drifted. The check scripts read the working tree and
+# are silent (exit 0) off a SPEC-* branch, so ordinary commits are unaffected.
+#
+# Deployed (by init-and-wire.sh) into a committed .spec-workflow/hooks/ dir and activated with
+#   git config core.hooksPath .spec-workflow/hooks
+# Bypass a single commit with:  git commit --no-verify
+#
+# SELF-LOCATING (portable, not GNU-only readlink -f): find our own dir so we run our co-located
+# sibling checks, and resolve the DATA root separately from the git top-level.
+SELF="$(cd "$(dirname "$0")" && pwd -P)"
+ROOT="$(git rev-parse --show-toplevel 2>/dev/null || echo "$PWD")"
+
+# --- S6: integrity of the check scripts before we execute them ---
+# checks.sha256 is generated at deploy time over the deployed scripts. If a working-tree edit or a
+# tampered commit changed a check script, fail loudly rather than run untrusted enforcement code.
+if [ -f "$SELF/checks.sha256" ]; then
+  if command -v sha256sum >/dev/null 2>&1; then
+    ( cd "$SELF" && sha256sum -c --quiet checks.sha256 ) || {
+      echo "pre-commit: spec-workflow check-script integrity FAILED (see above)." >&2
+      echo "A check script under .spec-workflow/hooks/ differs from its pinned hash. Restore it (re-run 'apm install') or, if you changed it intentionally, regenerate checks.sha256." >&2
+      exit 1
+    }
+  elif command -v shasum >/dev/null 2>&1; then
+    ( cd "$SELF" && shasum -a 256 -c checks.sha256 >/dev/null ) || {
+      echo "pre-commit: spec-workflow check-script integrity FAILED." >&2
+      exit 1
+    }
+  fi
+fi
+
+rc=0
+for h in check-ac-closeout check-status-sync check-spec-version; do
+  script="$SELF/$h.sh"
+  [ -f "$script" ] || continue
+  SPEC_WORKFLOW_ROOT="$ROOT" bash "$script" || rc=1
+done
+if [ "$rc" -ne 0 ]; then
+  echo "" >&2
+  echo "pre-commit: spec-workflow check failed (see above). Fix it, or bypass with 'git commit --no-verify'." >&2
+fi
+exit "$rc"
