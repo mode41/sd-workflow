@@ -1,0 +1,6 @@
+# APM downloads transitive dependencies here; rebuilt on install, never committed.
+apm_modules/
+
+# OS / editor noise
+.DS_Store
+*.swp
