@@ -166,27 +166,17 @@ Each spec file = ONE testable, deployable unit.
 
 ## Spec Versioning, Changelog & Deprecation
 
-Every spec carries a `**Version:**` (`v1`, `v2`, …) and an inline `## Changelog` — the template
-seeds both (`v1` plus an "Initial spec" row; just fill in the date). The spec header + changelog
-are the **source of truth**; the INDEX row's `Version` cell mirrors them.
+The spec-versioning rules govern when a version bump is required; follow them. What this command
+adds on top:
 
-- **New specs** start at `v1`; set the INDEX row's `Version` cell to `v1`.
+- **New specs** start at `v1` — the template seeds `**Version:** v1` plus an "Initial spec" changelog
+  row, so just fill in the date — and set the new INDEX row's `Version` cell to `v1` to match.
 - **Editing a spec that is still `🔵 In Planning`** is free drafting — no bump needed.
-- **Cross-spec impact:** if a new or changed spec forces a change to **another spec that is
-  already `🟣 Planned` or later**, update that spec, bump its `**Version:**`, add a `## Changelog`
-  row with `Driver = SPEC-<the spec you are working on>`, and update its INDEX `Version` cell.
-- **Deprecating a spec (drop, don't rewrite):** when a new/changed spec makes another spec's
-  feature no longer exist, deprecate that spec instead of rewriting it:
-  1. set `**Status:** ⚫ Deprecated` in **both** the spec header and its INDEX row,
-  2. bump `**Version:**` and add a `## Changelog` row, e.g.
-     `| v3 | 2026-07-05 | Deprecated — superseded by SPEC-12 (feature removed) | SPEC-12 |`,
-  3. append a short `## Deprecation` note (what supersedes it / why it's gone),
-  4. **keep the file** as a tombstone — never delete it,
-  5. fix any `## Dependencies` / build-order references in other specs that pointed at it.
-
-A shared hook (`.spec-workflow/hooks/check-spec-version.sh`, run as a per-harness finish-boundary hook
-and a git pre-commit check) blocks finishing/committing when a Planned+ spec changed substantively —
-or was deprecated — without a version bump + a new changelog row.
+- **Cross-spec impact:** if a new or changed spec forces a change to **another spec that is already
+  `🟣 Planned` or later**, update that spec with `Driver = SPEC-<the spec you are working on>` and
+  mirror its new version in its INDEX `Version` cell.
+- **When deprecating a spec**, also fix any `## Dependencies` / build-order references in other specs
+  that pointed at it — leaving a dangling dependency is how a tombstone breaks the build order.
 
 ## Important
 - NEVER write code - that is for implementation

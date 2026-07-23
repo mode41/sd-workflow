@@ -1,10 +1,15 @@
 # Extending the workflow with stack/design bundles
 
 The `spec-driven-workflow` core is deliberately **generic** — it carries the workflow, enforcement,
-reviewer agents, and security rules, but **no** language, framework, or design specifics. Those are
-provided by optional **capability bundles** (separate APM packages) through a small, **frozen**
-extension contract. This document is that contract. Freezing it means a bundle — or your own
-stack-init tool — can be built later **without ever forcing a change to the core**.
+reviewer agents, and security rules, but **no** language, framework, or design specifics. The workflow
+itself is stack- and design-agnostic: a static website uses the exact same workflow as a complex
+information-management system. Stack- and design-specific guidance is instead provided by optional
+**capability bundles** (separate APM packages) through a small, **frozen** extension contract. This
+document is that contract. Freezing it means a bundle — or your own stack-init tool — can be built
+later **without ever forcing a change to the core**.
+
+This document is the human-facing source of truth for the seam; the core's commands carry only the
+one-line consult step they need.
 
 ## The profile seam (frozen in core v1)
 

@@ -11,9 +11,10 @@ _One paragraph: what this product is, who it's for, and the core principle that 
 ## How this project works
 This repository follows the **Spec-Driven Development (SDD)** workflow, installed via
 [Microsoft APM](https://microsoft.github.io/apm/) as the `spec-driven-workflow` package. The workflow
-itself — the spec lifecycle, plan-review pipeline, spec-versioning rules, and security rules — is
-delivered as **managed agent rules/commands** (they refresh on `apm update`); do not copy that prose
-here. Project-specific tuning goes in `spec-workflow.supplemental.md`.
+itself — the spec lifecycle, plan-review pipeline, spec-versioning rules, security rules — **and the
+general engineering rules** (engineering practices, code hygiene, testing) are delivered as **managed
+agent rules/commands** (they refresh on `apm update`); do not copy that prose here. Project-specific
+tuning goes in `spec-workflow.supplemental.md`.
 
 Key locations:
 - `specs/` — spec files (`SPEC-N-*.md`) and `specs/INDEX.md` (the status source of truth).
