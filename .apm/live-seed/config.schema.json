@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mode41.com/spec-driven-workflow/config.schema.json",
+  "title": "Spec-Driven Workflow configuration",
+  "description": "Project configuration for the spec-driven-workflow package. This file is MANAGED — it is refreshed on every install. Your settings live in config.json, which is never overwritten.",
+  "type": "object",
+  "required": ["schemaVersion", "agents"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Pointer to this schema, so your editor validates config.json as you type. Leave it as \"./config.schema.json\"."
+    },
+    "schemaVersion": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Config format version. The installer range-checks this: a version newer than the installed package understands makes it skip model stamping rather than mis-parse your settings. Do not edit by hand."
+    },
+    "agents": {
+      "type": "object",
+      "description": "Per-subagent settings, keyed by agent name (the filename stem of the agent this package ships, e.g. \"architecture-reviewer\"). The installer adds an entry when a package update introduces a new subagent, and never changes a value you have set.",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "model": {
+            "$ref": "#/$defs/modelMap"
+          }
+        }
+      }
+    },
+    "retiredAgents": {
+      "type": "object",
+      "description": "Settings for subagents this package no longer ships. The installer moves entries here instead of deleting them, so your choice is restored if the agent ever returns. Safe to empty by hand.",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "model": {
+            "$ref": "#/$defs/modelMap"
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "modelMap": {
+      "type": "object",
+      "description": "Which model this subagent runs on. Values are written VERBATIM into the deployed agent file's `model:` frontmatter key — the package never translates them, so any model your harness understands works, including local and third-party ones.",
+      "additionalProperties": {
+        "type": ["string", "null"],
+        "description": "The exact model string for this harness. null or omitted means the agent inherits the harness default and its frontmatter is left untouched."
+      },
+      "properties": {
+        "default": {
+          "type": ["string", "null"],
+          "description": "Used for every harness without its own key. Set this alone if you use a single harness. Examples — Claude Code: \"opus\", \"sonnet\", \"haiku\", \"inherit\", or a full model ID such as \"claude-opus-4-8\"."
+        },
+        "claude": {
+          "type": ["string", "null"],
+          "description": "Model for Claude Code (.claude/agents/). Accepts an alias (\"opus\", \"sonnet\", \"haiku\", \"inherit\") or a full model ID (\"claude-opus-4-8\"). Aliases track the current model; full IDs pin it."
+        },
+        "opencode": {
+          "type": ["string", "null"],
+          "description": "Model for opencode (.opencode/agents/), in provider/model form. Examples: \"anthropic/claude-opus-4-8\", \"ollama/qwen2.5-coder\", \"ollama/devstral\"."
+        }
+      }
+    }
+  }
+}

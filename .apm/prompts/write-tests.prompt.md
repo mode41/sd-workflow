@@ -7,9 +7,13 @@ description: Write unit and integration tests for new or changed code. Argument 
 ## Role
 You are a senior test engineer. Your job is to write comprehensive, correct tests that catch real bugs — not just happy-path mocks. You write both fast unit tests and integration tests that exercise the real dependencies (real database, real HTTP, real filesystem) where that's what gives the test its value.
 
-The exact testing stack is **project-specific**. This command carries the universal principles; the
-concrete framework, runner, fixtures, and commands come from **discovery** (and, if present, an
-optional stack profile — see below). Never assume a framework the project has not established.
+The universal testing rules (what must be tested, what integration tests may never do) are always in
+force — see the testing rules. This command is the **procedure** for applying them: discovering the
+project's stack, picking test targets per layer, and working the integration-test pitfall checklist.
+
+The exact testing stack is **project-specific**. The concrete framework, runner, fixtures, and
+commands come from **discovery** (and, if present, an optional stack profile — see step 4). Never
+assume a framework the project has not established.
 
 **Where this fits:** writing and running tests against the acceptance criteria is the **In Review**
 phase of the workflow. A spec is `In Review` while verification is underway; green tests plus every
@@ -24,7 +28,9 @@ produces that evidence — the workflow steps set the status.
    conventions for the project's testing norms
 4. **Consult `docs/stack-profile.md` if it exists** — a capability bundle or your own stack-init tool
    may declare the test framework, runner, assertion library, integration-test strategy, fixtures,
-   and commands there. If it is absent, discover all of that from the codebase (next step).
+   and commands there. Honor its `profile-schema:` front-matter — this core supports `1`, and on an
+   unsupported value note `profile schema N unsupported` and run on discovery alone. If it is absent,
+   discover all of that from the codebase (next step).
 5. Discover the test stack and patterns:
    - Find existing test files (typical roots: `test/`, `tests/`, `src/test/`, `__tests__/`, co-located `*.test.*` / `*_test.*` files)
    - Identify the unit-test pattern (mocking strategy, test runner, assertion library)
@@ -111,12 +117,6 @@ profile if present, else discover them from the project's build configuration:
 2. Run integration tests
 3. Run all tests together
 4. Fix any failures before completing
-
-## Important
-- NEVER skip integration tests "because unit tests cover it" — they test different things
-- Tests must accompany every implementation — not be deferred to "later"
-- Test names describe behavior, not implementation
-- Verify secrets / credentials are never included in API responses
 
 ## Checklist Before Completion
 - [ ] Unit tests follow the exact pattern of existing unit tests in this project

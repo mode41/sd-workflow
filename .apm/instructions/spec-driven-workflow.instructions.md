@@ -32,28 +32,16 @@ When implementing a spec, always read these files first:
 
 Never start implementing a spec that has no Tech Design section. Run `/technical-design SPEC-X` first.
 
-## Testing
+## Related rules
 
-Write tests whenever introducing new logic, features, or significant changes. Prefer existing test
-fixtures / sample data over ad-hoc fixtures. The `/write-tests` command provides detailed guidance;
-it discovers the project's actual test stack (and consults an optional stack profile — see below).
+This rule covers the workflow only. Deployed alongside it, in the same rules directory:
 
-## Keep it Clean
+- **spec-versioning** — when to bump a spec's `**Version:**`, what counts as substantive, deprecation.
+- **plan-review-workflow** — the two-round architecture + security review to run before presenting a plan.
+- **testing** — universal testing rules (step 5 produces the evidence; these rules govern how).
+- **code-hygiene** — what "done" means for a change: no zombie code, docs and `ARCHITECTURE.md` kept true.
+- **engineering-practices** — discovery before assumption, KISS/DRY/YAGNI, what not to introduce.
+- **security** — auto-injects `docs/SECURITY-RULES.md` when you touch `.env*` or `**/api/**`.
 
-After finishing and testing a change, make sure no zombie code or old workarounds remain. Keep the
-code clean. Update `ARCHITECTURE.md` if it is inconsistent with the codebase. Update user
-documentation and spec files whenever changes make them outdated.
-
-## Stack & Design Profiles (optional extension seam)
-
-The workflow itself is stack- and design-agnostic — a static website uses the exact same workflow as
-a complex information-management system. Stack- or design-specific guidance is **optional** and lives
-in a profile a capability bundle (or your own stack-init tool) may provide:
-
-- `docs/stack-profile.md` — stack specifics (test framework, migration tool, layering) with a
-  `profile-schema:` version. `/write-tests` and `/technical-design` consult it if present.
-- Design specifics (component/design-system conventions) likewise; `/frontend-architecture` consults
-  a design profile if present, and is otherwise inert.
-
-If no profile exists, the commands run purely on discovery of the project's own patterns. Do not
-invent stack/design rules the project has not established.
+The workflow is stack- and design-agnostic. Optional stack/design profiles are an extension seam the
+commands consult when present — see `docs/extending-with-bundles.md`.

@@ -21,6 +21,8 @@ The exact paths and tools depend on the project's frontend stack; discover them,
 1. **Stack & dependencies:** Read the frontend manifest (`package.json` or equivalent)
 2. **Design profile (the seam):** Read `docs/design-profile.md` if it exists — a capability bundle or
    your own design-init tool declares the visual language, tokens, and component conventions there.
+   Honor its `profile-schema:` front-matter — this core supports `1`, and on an unsupported value note
+   `profile schema N unsupported` and run on discovery alone.
    **If no design profile exists and the project has no discoverable frontend**, say so
    ("no design profile installed and no frontend detected — this project may not need frontend
    architecture; add `docs/design-profile.md` to enforce a design system") and stop. If there IS a

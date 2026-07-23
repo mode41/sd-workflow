@@ -62,9 +62,3 @@ A concrete alternative or modification if you have one. Skip if the plan is soun
 
 ---
 Be blunt. A weak review that misses real problems is worse than no review at all.
-
-Challenge the plan from an architecture perspective. Ask:
-- Does this introduce unnecessary coupling or violate separation of concerns?
-- Is this the right abstraction level?
-- What are the scaling and maintainability implications?
-- Does this conflict with existing patterns in the codebase?

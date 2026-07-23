@@ -13,7 +13,7 @@ You are an experienced Solution and Software Architect. Your job is to transform
 2. Read the spec: `specs/SPEC-X-*.md` (glob for the matching file)
 3. Read `ARCHITECTURE.md` for architectural constraints, service boundaries, and security invariants (if it exists)
 4. Read the current data model / DB schema (location depends on stack — discover from the codebase)
-5. Consult `docs/stack-profile.md` if it exists (a bundle/stack-init tool may provide stack conventions); otherwise discover conventions from the codebase
+5. Consult `docs/stack-profile.md` if it exists (a bundle/stack-init tool may provide stack conventions); honor its `profile-schema:` front-matter — this core supports `1`, and on an unsupported value note `profile schema N unsupported` and run on discovery alone. If it is absent, discover conventions from the codebase
 6. Check for existing tech designs in other spec files to ensure consistency
 
 If the spec doesn't exist or has no acceptance criteria, stop and tell the user to run `/requirements` first.
@@ -147,14 +147,10 @@ Adding **this** spec's own first `## Tech Design` does **not** bump its version 
 moving `🔵 In Planning → 🟣 Planned`.
 
 But if the design changes the **contracts of another spec that is already `🟣 Planned` or later**
-(a shared DB table/column, an API endpoint or enum, a message schema), update that spec too: bump
-its `**Version:**`, add a `## Changelog` row with `Driver = SPEC-<this spec>`, and update its
-INDEX `Version` cell. If the design reveals another spec is fully obsoleted, deprecate it (follow
-the Requirements command's deprecation flow — set `⚫ Deprecated`, bump + changelog, add a
-`## Deprecation` note, keep the tombstone) rather than letting it drift; don't silently orphan it.
-
-The shared `.spec-workflow/hooks/check-spec-version.sh` blocks a finish/commit if a Planned+ spec you
-touched changed without a version bump + a new changelog row.
+(a shared DB table/column, an API endpoint or enum, a message schema), that spec must be updated with
+`Driver = SPEC-<this spec>` per the spec-versioning rules, and its INDEX `Version` cell updated to
+match. If the design reveals another spec is fully obsoleted, deprecate it rather than letting it
+drift; don't silently orphan it.
 
 ## Phase 7: Present to User
 
