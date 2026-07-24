@@ -27,7 +27,9 @@ commit from any tool or human; bypass with `git commit --no-verify`).
 
 When implementing a spec, always read these files first:
 - The spec folder `specs/SPEC-X-*/`: `spec.md` (the contract) and `tech-design.md` (the HOW)
-- `ARCHITECTURE.md` for architectural constraints and security invariants
+- `docs/context-map.md` to locate the architecture & security sources (`kind=architecture` /
+  `kind=security`): query a connected provider, else read the listed file, else discover from the
+  codebase — defaults to `ARCHITECTURE.md` and `docs/SECURITY-RULES.md`
 - `specs/INDEX.md` for dependency order
 
 Never start implementing a spec that has no `tech-design.md`. Run `/technical-design SPEC-X` first.
@@ -39,9 +41,11 @@ This rule covers the workflow only. Deployed alongside it, in the same rules dir
 - **spec-versioning** — when to bump a spec's `**Version:**`, what counts as substantive, deprecation.
 - **plan-review-workflow** — the two-round architecture + security review to run before presenting a plan.
 - **testing** — universal testing rules (step 5 produces the evidence; these rules govern how).
-- **code-hygiene** — what "done" means for a change: no zombie code, docs and `ARCHITECTURE.md` kept true.
+- **code-hygiene** — what "done" means for a change: no zombie code, docs and the architecture source kept true.
 - **engineering-practices** — discovery before assumption, KISS/DRY/YAGNI, what not to introduce.
-- **security** — auto-injects `docs/SECURITY-RULES.md` when you touch `.env*` or `**/api/**`.
+- **security** — when you touch `.env*` or `**/api/**`, injects the security rules located via `docs/context-map.md` (`kind=security`; defaults to `docs/SECURITY-RULES.md`).
 
-The workflow is stack- and design-agnostic. Optional stack/design profiles are an extension seam the
-commands consult when present — see `docs/extending-with-bundles.md`.
+The workflow is stack- and design-agnostic. Optional stack/design profiles, and the **context map**
+(`docs/context-map.md`) that says where your governing context lives (architecture, security, business,
+ADRs, UX — repo files or external tools/providers), are extension seams the commands consult when
+present — see `docs/extending-with-bundles.md`.

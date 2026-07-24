@@ -16,6 +16,18 @@ package; invoke them the way your harness invokes subagents (from its agents dir
 
 ---
 
+## Assemble review context
+
+Before Round 1, gather the **relevant codebase context** you will hand to both reviewers. Consult
+`docs/context-map.md` if it exists: for `kind=architecture`, `kind=security`, and `kind=adr`, query a
+listed MCP context provider — scoped to the services the plan touches — if its tool is connected, else
+read the listed source(s), else fall back to the codebase. This is what lets the security reviewer see
+your org's real security governance whether it lives in a repo file or in Confluence. Include the
+result in the "relevant codebase context" passed to both agents below. Honor the map's
+`context-schema:` front-matter — this core supports `1`; on an unsupported value run on discovery alone.
+
+---
+
 ## Round 1 — Independent Review
 
 Run both agents in parallel on the original plan:

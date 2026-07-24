@@ -7,9 +7,10 @@ the criteria are ticked and the evidence is recorded — enforced by git hooks, 
 It is **agent-agnostic**: one source of truth, compiled by
 [Microsoft APM](https://microsoft.github.io/apm/) (Agent Package Manager) into whichever coding-agent
 harness your project uses — `.claude/`, `.opencode/`, `.cursor/`, `.github/`, … A static website and a
-complex information-management system use the **exact same workflow**; stack- and design-specific
-guidance is optional and lives in separate
-[bundles](docs/extending-with-bundles.md).
+complex information-management system use the **exact same workflow**. Stack- and design-specific
+guidance is optional and lives in separate [bundles](docs/extending-with-bundles.md); *where* your
+governing context lives — architecture, security rules, ADRs, UX — is likewise pluggable, through a
+[context map](docs/extending-with-bundles.md) of files and optional MCP providers.
 
 ## The loop
 
@@ -42,16 +43,19 @@ showing the status header, changelog, ticked acceptance criteria, a descoped one
 - **Reviewer agents** — `architecture-reviewer`, `security-reviewer`, driving the Plan Review Workflow.
   Pick a model per agent (any model your harness understands, including local ones) — see
   *Choosing models for the reviewer agents*.
-- **Security rules** — auto-injected when you touch `.env*` or `**/api/**`.
+- **Security rules** — auto-injected when you touch `.env*` or `**/api/**`, from wherever your context
+  map points (`kind=security`; defaults to `docs/SECURITY-RULES.md`).
 - **General engineering rules** — `engineering-practices` (discovery before assumption, KISS/DRY/YAGNI,
-  what not to introduce), `code-hygiene` (no zombie code; docs and `ARCHITECTURE.md` kept true), and
+  what not to introduce), `code-hygiene` (no zombie code; docs and your architecture source kept true), and
   `testing` (universal, stack-agnostic testing law). These are the rules you would otherwise hand-write
   into `CLAUDE.md` / `AGENTS.md`; here they ship as managed rules that refresh on `apm update`.
 - **Self-enforcing checks** — spec status, acceptance-criteria close-out, and spec versioning are
   enforced two ways (see *Enforcement* below).
 
-What it deliberately does **not** contain: language/framework/design specifics. Those live in
-optional bundles, discovered through a frozen profile seam.
+What it deliberately does **not** contain: language/framework/design specifics (those live in
+optional bundles, discovered through a frozen profile seam), or any hardcoded assumption about *where*
+your governing context lives — architecture docs, security rules, ADRs, and UX guidelines are located
+through the context map, so they can sit in the repo or in Confluence/Notion/an MCP provider.
 
 ## Requirements
 
@@ -88,7 +92,7 @@ bash "$(find apm_modules -path '*/.apm/scripts/init-and-wire.sh' | head -1)"
 This:
 - deploys the enforcement machinery into a committed `.spec-workflow/` directory,
 - **seeds** the living files **only if absent** — `specs/INDEX.md`, `docs/PRD.md`,
-  `docs/SECURITY-RULES.md`, `AGENTS.md`, `spec-workflow.supplemental.md`,
+  `docs/SECURITY-RULES.md`, `docs/context-map.md`, `AGENTS.md`, `spec-workflow.supplemental.md`,
   `.spec-workflow/config.json` — never clobbering your data,
 - **adopts an existing `AGENTS.md`**: if you already have one (most existing projects do), the
   installer never rewrites it — it offers to *append* a marked workflow section (interactively), or
@@ -151,8 +155,10 @@ the end of that journey, annotated with which hook enforces which convention.
 specs/                     # your specs (SPEC-N-name/ folders) + INDEX.md   ← living data, seeded once
                            #   each folder: spec.md + tech-design.md + implementation.md + attachments
                            #   (what one looks like: docs/example-spec.md)
-docs/PRD.md                # living data, seeded once
-docs/SECURITY-RULES.md     # living data, seeded once (drift-notified on update)
+docs/PRD.md                # living data, seeded once (default `business` context source)
+docs/SECURITY-RULES.md     # living data, seeded once (default `security` source; drift-notified on update)
+docs/context-map.md        # living data, seeded once — where governing context lives (files + optional MCP providers)
+ARCHITECTURE.md            # optional — default `architecture` source (create as the project takes shape)
 AGENTS.md                  # neutral project memory, seeded once (or workflow section appended if it exists)
 spec-workflow.supplemental.md  # your workflow tuning, seeded once, never overwritten
 .claude/ .opencode/ ...    # APM-deployed rules/commands/agents + our finish hooks & agent models
@@ -227,7 +233,9 @@ Your settings survive package updates: when a new version adds a reviewer agent,
   `apm lifecycle trust`**. Still: pin by commit SHA, and use `--frozen` + `apm audit` in CI.
 - **`docs/SECURITY-RULES.md` is yours.** It is seeded once and never overwritten, so org-specific
   rules survive updates; the installer prints a drift notice when it diverges from upstream so you can
-  pull in improvements deliberately.
+  pull in improvements deliberately. It is the **default** `security` source — repoint `kind=security`
+  in `docs/context-map.md` at a Confluence/Notion page or an MCP provider if your rules live there
+  instead.
 - **Check-script integrity.** The pre-commit hook verifies the three check scripts against a pinned
   `checks.sha256` before running them, and fails loudly if one was tampered with.
 
@@ -237,6 +245,23 @@ The core is bundle-ready via a **frozen profile seam**: `/write-tests` and `/tec
 `docs/stack-profile.md`; `/frontend-architecture` consults `docs/design-profile.md`. If no profile is
 present, commands run on discovery of your project's own patterns. See
 [`docs/extending-with-bundles.md`](docs/extending-with-bundles.md).
+
+## Connecting governing context (files & MCP providers)
+
+The workflow reads your project's governing context — architecture, security rules, business context,
+ADRs, UX guidelines — through a single seeded manifest, `docs/context-map.md`. Each entry is either a
+**file** (a repo path or an external URL — Confluence, Notion, a wiki) or a **provider**: an MCP tool
+that serves context **scoped** to the part of the system you are working on, queried live. For any
+kind, the commands query a connected provider, else read the listed file, else discover from the repo —
+so it degrades cleanly and needs **no new dependency** (the manifest is plain markdown; MCP is
+optional). Architecture docs and security rules are located this way too, so they can live in the repo
+or in an org-wide tool — your choice, not a hardcoded path.
+
+The seam is vendor-neutral: any MCP tool matching the contract works. The reference provider is
+**[architrace.io](https://architrace.io)**, which serves your org's governing context (Confluence,
+Notion, git, …) scoped to each system. Connect its MCP server in your harness settings and add a row to
+the manifest's Providers table. See
+[`docs/extending-with-bundles.md`](docs/extending-with-bundles.md) for the frozen contract.
 
 ## License
 

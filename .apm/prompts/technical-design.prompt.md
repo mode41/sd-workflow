@@ -11,7 +11,7 @@ You are an experienced Solution and Software Architect. Your job is to transform
 
 1. Parse the spec ID from the user's input (e.g., `SPEC-5`)
 2. Read the spec's contract: `specs/SPEC-X-*/spec.md` (glob for the matching spec folder)
-3. Read `ARCHITECTURE.md` for architectural constraints, service boundaries, and security invariants (if it exists)
+3. **Context map (the seam):** consult `docs/context-map.md` if it exists to locate the architectural constraints & service boundaries (`kind=architecture`), security invariants (`kind=security`), and any decision records (`kind=adr`). For each, query a listed MCP context provider — scoped to the services this spec touches (Phase 1, step 3) — if its tool is connected, else read the listed source, else discover from the codebase. Honor its `context-schema:` front-matter — this core supports `1`; on an unsupported value note `context schema N unsupported` and run on discovery alone. **Defaults** (used when the map is absent or has no row for a kind): `architecture` → `ARCHITECTURE.md`, `security` → `docs/SECURITY-RULES.md`.
 4. Read the current data model / DB schema (location depends on stack — discover from the codebase)
 5. Consult `docs/stack-profile.md` if it exists (a bundle/stack-init tool may provide stack conventions); honor its `profile-schema:` front-matter — this core supports `1`, and on an unsupported value note `profile schema N unsupported` and run on discovery alone. If it is absent, discover conventions from the codebase
 6. Check `tech-design.md` in other spec folders to ensure consistency
@@ -26,7 +26,7 @@ Before designing, understand what already exists:
 
 1. Read all dependency specs (listed in the spec's Dependencies section)
 2. Check if dependency specs already have tech designs — reuse their schemas and APIs
-3. Identify which service(s) / module(s) this spec touches. For each project this differs — discover the actual service boundaries from `ARCHITECTURE.md` and the codebase. Typical categories:
+3. Identify which service(s) / module(s) this spec touches. For each project this differs — discover the actual service boundaries from the architecture source (per the context map — see Before Starting step 3) and the codebase. Typical categories:
    - **Backend / API services** — CRUD, auth, business logic, REST/GraphQL endpoints
    - **Background workers / jobs** — async processing, integrations, long-running tasks
    - **Frontend** — UI components, pages, client-side state
@@ -84,7 +84,7 @@ Cover all relevant services with clear boundaries for what happens where.
 
 Before presenting, check the design against:
 
-1. **Security invariants** from `ARCHITECTURE.md` — flag any violation
+1. **Security invariants** from the architecture & security sources (per the context map — see Before Starting step 3) — flag any violation
 2. **Acceptance criteria** from the spec — every AC must be addressable by the design
 3. **Edge cases** from the spec — the design must handle each one
 4. **Dependency contracts** — the design must be compatible with existing schemas and APIs
@@ -169,7 +169,7 @@ Present a summary:
 - NEVER modify acceptance criteria — that is for the Requirements command
 - Focus: HOW should the spec work technically (not WHAT it should do)
 - Designs must be concrete enough that a developer can implement without further questions
-- Respect every security invariant declared in `ARCHITECTURE.md` — no exceptions without explicit user approval
+- Respect every security invariant declared in the architecture & security sources (per the context map) — no exceptions without explicit user approval
 - Every API endpoint MUST declare its auth requirement
 
 ## Checklist Before Completion
@@ -177,7 +177,7 @@ Present a summary:
 - [ ] All edge cases are handled (either by design or explicit fallback)
 - [ ] Multi-tenancy / row-level isolation respected on every new table (if the project requires it)
 - [ ] API contracts include auth requirements and error responses
-- [ ] Design is consistent with `ARCHITECTURE.md` constraints
+- [ ] Design is consistent with the architecture source's constraints (per the context map)
 - [ ] Security invariants are respected
 - [ ] Migration file created (if new tables)
 - [ ] Dependencies on other specs are compatible with their designs
