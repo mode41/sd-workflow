@@ -16,12 +16,16 @@ SPEC="$SPEC_DIR/finish-hook.spec.json"
 HOOKS_REL=".spec-workflow/hooks"
 SENTINEL="spec-workflow-finish-hook"   # marker so we can detect our own entries idempotently
 
+SELF="$(cd "$(dirname "$0")" && pwd -P)"
+# shellcheck source=/dev/null
+. "$SELF/config-lib.sh"   # for notice_add — contributes to the installer's shared MANUAL-STEPS sink
+
 log() { printf '  [hooks] %s\n' "$1"; }
 
 # jq is a hard requirement of the installer (the project config is JSON), so the old jq-less
 # fallback is gone. Guard here too — this script is also runnable standalone, and a half-merged
 # settings.json is worse than a loud failure.
-command -v jq >/dev/null 2>&1 || { log "ERROR: jq is required to merge harness hooks safely; install it and re-run."; exit 1; }
+command -v jq >/dev/null 2>&1 || { log "ERROR: jq is required to merge harness hooks safely; install it and re-run."; notice_add "jq is missing — per-harness finish hooks were not merged. Install jq and re-run the installer."; exit 1; }
 
 # --- Claude Code: merge a Stop hook into .claude/settings.json ---
 emit_claude() {
@@ -49,6 +53,7 @@ emit_claude() {
 #     rely on the git pre-commit floor; we log that honestly rather than pretend parity. ---
 emit_unsupported() {
   log "$1 detected but has no finish-hook emitter yet — git pre-commit floor covers it."
+  notice_add "$1 detected, but there is no native finish-hook emitter for it — the git pre-commit floor still enforces the checks at commit time, but no session-end hook was installed."
 }
 
 [ -f "$SPEC" ] || { log "no finish-hook.spec.json found; skipping per-harness hooks"; exit 0; }
