@@ -8,12 +8,13 @@ agent rules/commands** (they refresh on `apm update`); do not copy that prose he
 tuning goes in `spec-workflow.supplemental.md`.
 
 Key locations:
-- `specs/` — spec files (`SPEC-N-*.md`) and `specs/INDEX.md` (the status source of truth).
+- `specs/` — spec folders (`SPEC-N-name/`, each with `spec.md` + `tech-design.md` +
+  `implementation.md` + any attachments) and `specs/INDEX.md` (the status source of truth).
 - `docs/PRD.md` — product requirements. `docs/SECURITY-RULES.md` — security rules.
 - `.spec-workflow/` — the deployed enforcement machinery (git pre-commit + finish-hook checks).
 - `ARCHITECTURE.md` — architectural constraints and invariants (create as the project takes shape).
 
 Start a new project with `/requirements <your idea>`; then `/technical-design SPEC-1`, implement on a
-`SPEC-N` branch, `/write-tests`, and close out. Status must stay identical in each spec's `**Status:**`
-header and its `specs/INDEX.md` row (the hooks enforce this).
+`SPEC-N` branch, `/write-tests`, and close out. Status must stay identical in each spec's `spec.md`
+`**Status:**` header and its `specs/INDEX.md` row (the hooks enforce this).
 <!-- spec-workflow:end -->

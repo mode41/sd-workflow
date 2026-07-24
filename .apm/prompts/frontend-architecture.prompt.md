@@ -33,7 +33,7 @@ The exact paths and tools depend on the project's frontend stack; discover them,
 4. **Theme tokens:** Read the design-token entry point (discover it — the CSS/theme root)
 5. **Routing & providers:** Read the app root / entry point
 6. **Existing components:** Scan the project's component, page, hook, and provider directories
-7. **If the change relates to a spec:** Read the spec `specs/SPEC-X-*.md`
+7. **If the change relates to a spec:** Read the spec `specs/SPEC-X-*/spec.md`
 
 From these reads, build a mental model of:
 - What layout/shell pattern exists (if any)

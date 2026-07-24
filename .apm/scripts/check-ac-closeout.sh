@@ -9,12 +9,17 @@ dir="${SPEC_WORKFLOW_ROOT:-${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel
 branch=$(git -C "$dir" branch --show-current 2>/dev/null) || exit 0
 [[ "$branch" =~ (SPEC-[0-9]+) ]] || exit 0
 id="${BASH_REMATCH[1]}"
-file=$(ls "$dir"/specs/"${id}"-*.md 2>/dev/null | head -1)
-[[ -n "$file" && -f "$file" ]] || exit 0
+# A spec is a FOLDER: specs/SPEC-N-name/ with a canonical spec.md (+ tech-design.md, implementation.md,
+# attachments). Resolve the folder (main tree only — this check has never covered backlog), then its
+# spec.md. The trailing '-' in the glob stops SPEC-2 from matching SPEC-20. Keep this in sync with the
+# canonical-path regex in check-spec-version.sh.
+specdir=$(ls -d "$dir"/specs/"${id}"-*/ 2>/dev/null | head -1)
+file="${specdir}spec.md"
+[[ -n "$specdir" && -f "$file" ]] || exit 0
 # Deprecated (abandoned) spec: its feature no longer exists, so unticked ACs are expected — skip.
 grep -m1 '^\*\*Status:\*\*' "$file" | grep -qi 'Deprecated' && exit 0
-# Only at close-out: an "## Implementation…" section has been written.
-grep -qE '^## Implementation' "$file" || exit 0
+# Only at close-out: implementation.md (the close-out evidence doc) has been written.
+[[ -f "${specdir}implementation.md" ]] || exit 0
 # Fire only if an unchecked AC remains that is NOT marked descoped.
 if grep -E '^- \[ \] AC-' "$file" | grep -qvi 'descoped'; then
   echo "Close-out check for ${id} (${file}): unchecked AC boxes remain. Before finishing, tick each satisfied AC as [x], mark any intentionally-skipped one DESCOPED (leave it [ ]), and update the specs/INDEX.md status." >&2

@@ -53,9 +53,12 @@ Present the breakdown to the user for review:
 > "I've identified X specs for your project. Here's the breakdown and recommended build order:"
 
 ### Phase 4: Create Spec Files
+A spec is a **folder**, not a single file: `specs/SPEC-X-spec-name/` holds the canonical `spec.md`
+plus, later, `tech-design.md` (added by `/technical-design`) and `implementation.md` (added at
+close-out), and any attachments the spec refers to (`mockups/`, `source/` for imported material, …).
 For each spec (after user approval of the breakdown):
-- Create a spec file from `.spec-workflow/templates/spec.template.md`
-- Save to `specs/SPEC-X-spec-name.md`
+- Create the folder `specs/SPEC-X-spec-name/` and write `spec.md` from
+  `.spec-workflow/templates/spec.template.md`
 - Include user stories, acceptance criteria, and edge cases
 - Document dependencies on other specs
 
@@ -114,8 +117,9 @@ Ask about edge cases with concrete options:
 - What happens when the user is offline?
 
 ### Phase 3: Write the Spec
-- Use the template at `.spec-workflow/templates/spec.template.md`
-- Create the spec in `specs/SPEC-X-spec-name.md`
+- A spec is a **folder**: create `specs/SPEC-X-spec-name/` and write `spec.md` from the template at
+  `.spec-workflow/templates/spec.template.md`. Attachments the spec refers to (mockups, imported
+  source material) live beside `spec.md` in that folder.
 - Assign the next available SPEC-X ID from `specs/INDEX.md`
 
 ### Phase 4: User Review
@@ -144,10 +148,10 @@ feat(SPEC-X): Add specification for [spec name]
 
 ## CRITICAL: Spec Granularity (Single Responsibility)
 
-Each spec file = ONE testable, deployable unit.
+Each spec = ONE testable, deployable unit.
 
 **Never combine:**
-- Multiple independent functionalities in one file
+- Multiple independent functionalities in one spec
 - CRUD operations for different entities
 - User functions + admin functions
 - Different UI areas/screens
@@ -201,7 +205,7 @@ adds on top:
 - [ ] Every acceptance criterion is testable (not vague)
 - [ ] At least 3-5 edge cases documented
 - [ ] Spec ID assigned (SPEC-X)
-- [ ] File saved to `specs/SPEC-X-spec-name.md`
+- [ ] Spec folder created with `spec.md` at `specs/SPEC-X-spec-name/spec.md`
 - [ ] `specs/INDEX.md` updated
 - [ ] PRD roadmap table updated with new spec
 - [ ] User has reviewed and approved the spec

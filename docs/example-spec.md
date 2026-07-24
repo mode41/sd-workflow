@@ -3,17 +3,30 @@
 This is one complete spec at the end of its life — `🟢 Validated`, version `v3`, close-out written.
 It is the same CSV→Parquet CLI the README's *Start here* section uses.
 
-Reading a finished spec is the fastest way to understand the workflow, because every convention the
-hooks enforce is visible at once: the status header, the inline changelog, the ticked acceptance
-criteria, the one deliberately descoped criterion, and the verification evidence that justifies
-calling it done.
+A spec is a **folder**, not a single file. Reading a finished one is the fastest way to understand
+the workflow, because every convention the hooks enforce is visible at once: the status header, the
+inline changelog, the ticked acceptance criteria, the one deliberately descoped criterion, and the
+verification evidence that justifies calling it done.
 
-You don't write this by hand. `/requirements` creates the top half, `/technical-design SPEC-2`
-appends the `## Tech Design` section, and `/write-tests SPEC-2` plus close-out produce the bottom.
+You don't write this by hand. `/requirements` creates the folder and `spec.md`, `/technical-design
+SPEC-2` writes `tech-design.md`, and `/write-tests SPEC-2` plus close-out produce `implementation.md`.
+
+```
+specs/SPEC-2-parquet-writer/
+  spec.md              # the contract — WHAT (written by /requirements)
+  tech-design.md       # the HOW (written by /technical-design)
+  implementation.md    # close-out evidence (written at verification/close-out)
+  # …and any attachments the spec refers to can live here too, e.g.
+  #   mockups/         # wireframes, diagrams
+  #   source/          # the raw Jira/issue text a spec was distilled from
+```
 
 ---
 
-## `specs/SPEC-2-parquet-writer.md`
+## `specs/SPEC-2-parquet-writer/spec.md`
+
+The contract. It carries the `**Status:**` and `**Version:**` header and the inline `## Changelog` —
+those live only here, and govern the whole spec.
 
 ````markdown
 # SPEC-2: Parquet Writer
@@ -73,10 +86,18 @@ against write speed.
 
 ## Out of Scope
 Reading Parquet, partitioned output, and writing to object storage. Local file → local file only.
+````
 
 ---
 
-## Tech Design
+## `specs/SPEC-2-parquet-writer/tech-design.md`
+
+The HOW, its own file beside `spec.md`. Adding it the first time flips the spec `🔵 In Planning →
+🟣 Planned` with no version bump; editing it *after* Planned is a substantive change that bumps
+`spec.md`'s version.
+
+````markdown
+# SPEC-2: Parquet Writer — Tech Design
 
 **Designed:** 2026-03-05
 **Services:** CLI entry point, writer module
@@ -99,10 +120,17 @@ that escapes the working directory. No network access and no credentials are inv
 
 ### Open Questions
 None remaining — the row-group sizing question was resolved by descoping AC-5 into SPEC-6.
+````
 
 ---
 
-## Implementation & Verification
+## `specs/SPEC-2-parquet-writer/implementation.md`
+
+The close-out evidence. Its existence tells the status hook verification has happened; it is **not**
+version-gated, so writing it never demands a bump.
+
+````markdown
+# SPEC-2: Parquet Writer — Implementation & Verification
 
 Implemented on branch `SPEC-2` (commits `a1c9f02..7d3e118`).
 
@@ -113,52 +141,53 @@ Implemented on branch `SPEC-2` (commits `a1c9f02..7d3e118`).
   with `--force`.
 - Full suite green: 41 tests, 0 failures, run on the branch head.
 
-AC-5 is intentionally unticked and marked DESCOPED above; SPEC-6 carries it.
+AC-5 is intentionally unticked and marked DESCOPED in `spec.md`; SPEC-6 carries it.
 ````
 
 ---
 
 ## The matching `specs/INDEX.md` row
 
-The spec header and its INDEX row are the same fact stored twice, so they must agree — a hook fails
-your commit if they drift:
+The `spec.md` header and its INDEX row are the same fact stored twice, so they must agree — a hook
+fails your commit if they drift. The `File` link points at the folder's `spec.md`:
 
 ````markdown
 | ID | Spec | Priority | Status | Version | File | Created |
 |----|------|----------|--------|---------|------|---------|
-| SPEC-1 | CSV Reader | P0 (MVP) | Validated | v2 | [Spec](SPEC-1-csv-reader.md) | 2026-03-01 |
-| SPEC-2 | Parquet Writer | P0 (MVP) | Validated | v3 | [Spec](SPEC-2-parquet-writer.md) | 2026-03-02 |
-| SPEC-6 | Row-Group Tuning | P2 (Later) | In Planning | v1 | [Spec](SPEC-6-row-group-tuning.md) | 2026-03-14 |
+| SPEC-1 | CSV Reader | P0 (MVP) | Validated | v2 | [Spec](SPEC-1-csv-reader/spec.md) | 2026-03-01 |
+| SPEC-2 | Parquet Writer | P0 (MVP) | Validated | v3 | [Spec](SPEC-2-parquet-writer/spec.md) | 2026-03-02 |
+| SPEC-6 | Row-Group Tuning | P2 (Later) | In Planning | v1 | [Spec](SPEC-6-row-group-tuning/spec.md) | 2026-03-14 |
 ````
 
 ---
 
 ## What to notice
 
-**The status is stored twice, on purpose.** `**Status:** 🟢 Validated` in the header and `Validated`
-in the INDEX row. `check-status-sync.sh` blocks the commit if they disagree, if the word isn't one of
-the six legal tokens, or if the status *lags reality* — a spec with a close-out section can't still
-claim `In Progress`.
+**The status is stored twice, on purpose.** `**Status:** 🟢 Validated` in `spec.md`'s header and
+`Validated` in the INDEX row. `check-status-sync.sh` blocks the commit if they disagree, if the word
+isn't one of the six legal tokens, or if the status *lags reality* — a spec whose folder has an
+`implementation.md` can't still claim `In Progress`.
 
-**Acceptance criteria are the definition of done.** Once an `## Implementation & Verification`
-section exists, `check-ac-closeout.sh` blocks the commit while any `- [ ] AC-N` remains unticked —
+**Acceptance criteria are the definition of done.** Once `implementation.md` exists,
+`check-ac-closeout.sh` blocks the commit while any `- [ ] AC-N` remains unticked in `spec.md` —
 unless that line says `DESCOPED`. That's the only escape hatch, and it costs you a written reason,
 which is why AC-5 explains itself and names the spec that inherited it.
 
 **The changelog records why, not just what.** The `Driver` column names the `SPEC-N` whose work
 forced the change — `SPEC-4` widened the writer contract, `SPEC-6` took over row-group tuning — or
-`self` for a purely internal revision. Once a spec is `🟣 Planned` or later, any substantive edit
-must bump `**Version:**` and add a row, and `check-spec-version.sh` enforces it. Ticking a checkbox,
-advancing the status, and writing the close-out are all explicitly *not* substantive, so the normal
-implement → verify → close-out pass needs no bumps.
+`self` for a purely internal revision. Once a spec is `🟣 Planned` or later, any substantive edit to
+`spec.md` or `tech-design.md` must bump `**Version:**` and add a row to `spec.md`'s changelog, and
+`check-spec-version.sh` enforces it. Ticking a checkbox, advancing the status, and writing
+`implementation.md` are all explicitly *not* substantive, so the normal implement → verify →
+close-out pass needs no bumps.
 
 **Dependencies are declared, not implied.** `Requires: SPEC-1` is what makes the build order in
 `specs/INDEX.md` meaningful, and it's what tells you which other specs to re-check when a contract
 moves.
 
-**Superseded specs are never rewritten.** Had this feature been dropped instead of shipped, the spec
+**Superseded specs are never rewritten.** Had this feature been dropped instead of shipped, `spec.md`
 would carry `⚫ Deprecated`, a final changelog row citing the obsoleting spec, and a short
-`## Deprecation` note — and the file would stay as a tombstone so the history remains traceable.
+`## Deprecation` note — and the folder would stay as a tombstone so the history remains traceable.
 
-The blank template these conventions come from lives at `.spec-workflow/templates/spec.template.md`
-in your project after install.
+The blank template `spec.md` comes from lives at `.spec-workflow/templates/spec.template.md` in your
+project after install.

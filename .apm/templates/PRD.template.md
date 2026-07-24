@@ -18,7 +18,7 @@ _Describe what you are building and why in 2-3 sentences. What is the core probl
 
 | Priority | ID | Spec | File |
 |----------|----|------|------|
-| <!-- P0 (MVP) | SPEC-1 | Example Spec | [Spec](../specs/SPEC-1-example-spec.md) | -->
+| <!-- P0 (MVP) | SPEC-1 | Example Spec | [Spec](../specs/SPEC-1-example-spec/spec.md) | -->
 
 ## Success Metrics
 - _How do we measure that this product works?_
@@ -37,4 +37,4 @@ _Describe what you are building and why in 2-3 sentences. What is the core probl
 
 **Architecture:** [ARCHITECTURE.md](../ARCHITECTURE.md)
 
-Use `/requirements` to create detailed spec files for each item in the roadmap above.
+Use `/requirements` to create a detailed spec for each item in the roadmap above.

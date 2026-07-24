@@ -10,11 +10,11 @@ You are an experienced Solution and Software Architect. Your job is to transform
 ## Before Starting
 
 1. Parse the spec ID from the user's input (e.g., `SPEC-5`)
-2. Read the spec: `specs/SPEC-X-*.md` (glob for the matching file)
+2. Read the spec's contract: `specs/SPEC-X-*/spec.md` (glob for the matching spec folder)
 3. Read `ARCHITECTURE.md` for architectural constraints, service boundaries, and security invariants (if it exists)
 4. Read the current data model / DB schema (location depends on stack — discover from the codebase)
 5. Consult `docs/stack-profile.md` if it exists (a bundle/stack-init tool may provide stack conventions); honor its `profile-schema:` front-matter — this core supports `1`, and on an unsupported value note `profile schema N unsupported` and run on discovery alone. If it is absent, discover conventions from the codebase
-6. Check for existing tech designs in other spec files to ensure consistency
+6. Check `tech-design.md` in other spec folders to ensure consistency
 
 If the spec doesn't exist or has no acceptance criteria, stop and tell the user to run `/requirements` first.
 
@@ -100,12 +100,11 @@ If the design requires decisions not covered by the spec or architecture:
 
 ## Phase 5: Write the Tech Design
 
-Append the technical design to the spec file as a new section:
+Write the technical design as `tech-design.md` in the spec folder (`specs/SPEC-X-*/tech-design.md`),
+a sibling of `spec.md`:
 
 ```markdown
----
-
-## Tech Design
+# SPEC-X: <Spec Name> — Tech Design
 
 **Designed:** YYYY-MM-DD
 **Services:** <list the services / modules this spec touches>
@@ -126,12 +125,13 @@ Append the technical design to the spec file as a new section:
 ...
 ```
 
-Do NOT overwrite existing sections (User Stories, Acceptance Criteria, Edge Cases).
+Do NOT edit `spec.md`'s contract sections (User Stories, Acceptance Criteria, Edge Cases) — the
+design is its own file now.
 
 ## Phase 6: Update Shared Artifacts
 
-Once the `## Tech Design` section is written and approved, advance the status: set it to
-**🟣 Planned** in **both** the spec header (`**Status:**` line) and the spec's
+Once `tech-design.md` is written and approved, advance the status: set it to
+**🟣 Planned** in **both** the spec header (`spec.md`'s `**Status:**` line) and the spec's
 `specs/INDEX.md` row (they must match). `Planned` means "design done, ready to build" —
 before this step the spec was `In Planning`.
 
@@ -143,7 +143,7 @@ If the design introduces new API endpoints:
 
 ### Spec versioning & cross-spec changes
 
-Adding **this** spec's own first `## Tech Design` does **not** bump its version — it is still `v1`,
+Adding **this** spec's own first `tech-design.md` does **not** bump its version — it is still `v1`,
 moving `🔵 In Planning → 🟣 Planned`.
 
 But if the design changes the **contracts of another spec that is already `🟣 Planned` or later**
@@ -161,7 +161,7 @@ Present a summary:
 - Key design decisions and trade-offs
 - Any open questions
 
-> "Tech design is ready for SPEC-X. Review the design in `specs/SPEC-X-*.md` §Tech Design."
+> "Tech design is ready for SPEC-X. Review the design in `specs/SPEC-X-*/tech-design.md`."
 > "Next step: Implement the spec."
 
 ## Important

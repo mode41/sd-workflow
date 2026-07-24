@@ -13,8 +13,10 @@ guidance is optional and lives in separate
 
 ## The loop
 
-One spec per unit of work. Each step advances that spec's **status**, which must stay identical in the
-spec file and in `specs/INDEX.md` — the hooks fail your commit if they drift.
+One spec per unit of work. A spec is a **folder** — `specs/SPEC-N-name/` holding `spec.md` (the
+contract), `tech-design.md` (the how), `implementation.md` (close-out evidence), and any attachments
+the spec refers to (mockups, imported source). Each step advances that spec's **status**, which must
+stay identical in `spec.md` and in `specs/INDEX.md` — the hooks fail your commit if they drift.
 
 | What happens | You run | Status becomes |
 |---|---|---|
@@ -34,7 +36,7 @@ showing the status header, changelog, ticked acceptance criteria, a descoped one
 
 ## What you get
 
-- **`specs/INDEX.md`** — one table with every spec's status, version, file, and the recommended build
+- **`specs/INDEX.md`** — one table with every spec's status, version, folder, and the recommended build
   order, kept in lockstep with the specs themselves.
 - **Slash commands** — `/requirements`, `/technical-design`, `/write-tests`, `/frontend-architecture`.
 - **Reviewer agents** — `architecture-reviewer`, `security-reviewer`, driving the Plan Review Workflow.
@@ -120,13 +122,13 @@ In your coding agent, not the shell:
 ```
 
 That interviews you about the project, fills in `docs/PRD.md`, and splits the work into
-`specs/SPEC-N-*.md` files with a recommended build order. Then, per spec:
+`specs/SPEC-N-name/` folders (each with a `spec.md`) with a recommended build order. Then, per spec:
 
 ```
-/technical-design SPEC-1     → design reviewed by both reviewer agents, appended to the spec
+/technical-design SPEC-1     → design reviewed by both reviewer agents, written as tech-design.md
                              → implement it on a SPEC-1 branch
 /write-tests SPEC-1          → tests written and run against the acceptance criteria
-                             → tick the criteria, record the evidence, done
+                             → tick the criteria, record the evidence in implementation.md, done
 ```
 
 Adding a feature to a project that already has a PRD? Same entry point — `/requirements <the feature>`
@@ -146,7 +148,8 @@ the end of that journey, annotated with which hook enforces which convention.
   config.json              #   ← YOURS. Seeded once; values never overwritten. See below.
   MANUAL-STEPS.md          #   generated per-machine checklist of what the installer couldn't do
                            #   (git-ignored via a managed .spec-workflow/.gitignore — don't commit)
-specs/                     # your specs (SPEC-N-*.md) + INDEX.md   ← living data, seeded once
+specs/                     # your specs (SPEC-N-name/ folders) + INDEX.md   ← living data, seeded once
+                           #   each folder: spec.md + tech-design.md + implementation.md + attachments
                            #   (what one looks like: docs/example-spec.md)
 docs/PRD.md                # living data, seeded once
 docs/SECURITY-RULES.md     # living data, seeded once (drift-notified on update)

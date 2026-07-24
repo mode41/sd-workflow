@@ -23,7 +23,7 @@ produces that evidence — the workflow steps set the status.
 ## Before Starting
 
 1. Parse the input: either a `SPEC-X` spec ID or a file path
-2. If `SPEC-X`: read the spec `specs/SPEC-X-*.md` including its Tech Design section
+2. If `SPEC-X`: read the spec folder `specs/SPEC-X-*/` — `spec.md` (acceptance criteria) and `tech-design.md`
 3. Read the project memory (`AGENTS.md` / your harness's memory file) and any module-level
    conventions for the project's testing norms
 4. **Consult `docs/stack-profile.md` if it exists** — a capability bundle or your own stack-init tool
