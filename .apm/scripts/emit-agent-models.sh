@@ -21,7 +21,7 @@ CONFIG="$3"
 
 SELF="$(cd "$(dirname "$0")" && pwd -P)"
 # shellcheck source=/dev/null
-. "$SELF/config-lib.sh"
+. "$SELF/config-lib.sh"   # config accessors + notice_add (feeds the installer's MANUAL-STEPS sink)
 
 log() { printf '  [models] %s\n' "$1"; }
 
@@ -32,6 +32,7 @@ stamp_model() {   # <file> <value>
 
   head -1 "$file" 2>/dev/null | grep -q '^---[[:space:]]*$' || {
     log "WARNING: $(basename "$file") has no YAML frontmatter — not stamping."
+    notice_add "Agent file $(basename "$file") has no YAML frontmatter — its configured model was not applied; it inherits the harness default."
     return 0
   }
   # Already correct? Don't rewrite (keeps runs idempotent and diffs clean).
@@ -51,7 +52,7 @@ stamp_model() {   # <file> <value>
     }
     !done && /^description:/ { print; if (!placed) { print "model: " val; placed = 1 } next }
     { print }
-  ' "$file" > "$tmp" && [ -s "$tmp" ] || { rm -f "$tmp"; log "WARNING: failed to stamp $(basename "$file")"; return 0; }
+  ' "$file" > "$tmp" && [ -s "$tmp" ] || { rm -f "$tmp"; log "WARNING: failed to stamp $(basename "$file")"; notice_add "Failed to stamp the model into $(basename "$file") — it inherits the harness default; check the file's frontmatter."; return 0; }
   mv "$tmp" "$file"
   return 1   # 1 = "changed", for the caller's counter
 }
@@ -65,7 +66,7 @@ emit() {
     value="$(config_model_for "$stem" "$harness")"
     [ -n "$value" ] || { skipped=$((skipped + 1)); continue; }
     file="$dir/$stem$ext"
-    [ -f "$file" ] || { log "WARNING: $harness agent $stem$ext not deployed — skipping."; continue; }
+    [ -f "$file" ] || { log "WARNING: $harness agent $stem$ext not deployed — skipping."; notice_add "$harness agent '$stem' is configured with a model but its file ($stem$ext) is not deployed — run 'apm install' to deploy it, then re-run this installer to stamp the model."; continue; }
     stamp_model "$file" "$value" || changed=$((changed + 1))
   done
   if [ "$changed" -gt 0 ]; then
@@ -77,8 +78,9 @@ emit() {
   fi
 }
 
-emit_unsupported() {
+emit_unsupported() {   # <harness> <why>
   log "$1 detected but has no model emitter yet — its agents inherit the harness default."
+  notice_add "$1 detected — the installer cannot stamp reviewer models for it ($2). Its agents inherit the harness default; set models manually there if you need non-default ones."
 }
 
 [ -f "$CONFIG" ] || { log "no config.json found; skipping model stamping"; exit 0; }
@@ -88,7 +90,7 @@ command -v jq >/dev/null 2>&1 || { log "jq unavailable; skipping model stamping"
 [ -d "$ROOT/.opencode/agents" ] && emit opencode "$ROOT/.opencode/agents" ".md"
 # Copilot's `model:` is a YAML *list* of UI display names, not a string — needs a list-shaped
 # config value before we can stamp it safely.
-[ -d "$ROOT/.github/agents" ]   && emit_unsupported "Copilot"
+[ -d "$ROOT/.github/agents" ]   && emit_unsupported "Copilot" "its model: is a YAML list of UI display names, not a string"
 # Codex agents are .toml built by APM from name/description/body only — no frontmatter to stamp.
-[ -d "$ROOT/.codex/agents" ]    && emit_unsupported "Codex"
+[ -d "$ROOT/.codex/agents" ]    && emit_unsupported "Codex" "its agents are .toml with no frontmatter to stamp"
 exit 0

@@ -14,6 +14,12 @@ CONFIG_SCHEMA_VERSION=1
 
 cfg_log() { printf '  [config] %s\n' "$1"; }
 
+# --- manual-steps sink ------------------------------------------------------
+# Append one manual-step / degraded-outcome notice to the shared sink, if the installer set one up.
+# Cross-process safe: init-and-wire.sh exports SPEC_WORKFLOW_NOTICES so the delegated emit-*.sh
+# scripts (separate processes) can contribute to the same MANUAL-STEPS.md. A no-op when unset.
+notice_add() { [ -n "${SPEC_WORKFLOW_NOTICES:-}" ] && printf '%s\n' "$1" >> "$SPEC_WORKFLOW_NOTICES"; return 0; }
+
 # --- jq preflight -----------------------------------------------------------
 config_require_jq() {
   command -v jq >/dev/null 2>&1 && return 0

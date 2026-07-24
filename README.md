@@ -88,15 +88,23 @@ This:
 - **seeds** the living files **only if absent** — `specs/INDEX.md`, `docs/PRD.md`,
   `docs/SECURITY-RULES.md`, `AGENTS.md`, `spec-workflow.supplemental.md`,
   `.spec-workflow/config.json` — never clobbering your data,
+- **adopts an existing `AGENTS.md`**: if you already have one (most existing projects do), the
+  installer never rewrites it — it offers to *append* a marked workflow section (interactively), or
+  records it as a manual step if you decline or run non-interactively. Opt out with
+  `touch .spec-workflow/.no-agents-merge`,
 - merges the config forward (adds entries for newly-shipped reviewer agents, retires dropped ones)
   and prompts for any model you haven't chosen — see *Choosing models* below,
 - wires `git config core.hooksPath` (detect-and-preserve — see below),
 - emits each present harness's native finish hook (e.g. a Claude `Stop` hook) and stamps each
-  agent's configured model into the deployed agent files.
+  agent's configured model into the deployed agent files,
+- writes **`.spec-workflow/MANUAL-STEPS.md`** — a regenerated checklist of everything the installer
+  could *not* do for you (an existing `AGENTS.md` to extend, a foreign `core.hooksPath` to chain, an
+  unsupported harness, etc.). Check the file after each run; resolved items drop off automatically.
 
 Update later with `apm update`, then re-run the step-2 command: managed primitives and templates
 refresh; your seeded living files are left untouched (a drift notice prints if your
-`docs/SECURITY-RULES.md` diverges from upstream). In CI, use `apm install --frozen` and run `apm audit`.
+`docs/SECURITY-RULES.md` diverges from upstream), and `.spec-workflow/MANUAL-STEPS.md` is
+regenerated. In CI, use `apm install --frozen` and run `apm audit`.
 
 > **Verified against APM 0.25.0.** Auto-detect deploy works; a dependency's `lifecycle:` block is
 > project-scoped and does **not** auto-run in a consumer (hence the explicit step 2); project
@@ -136,11 +144,13 @@ the end of that journey, annotated with which hook enforces which convention.
   finish-hook.spec.json    #   the one neutral hook spec compiled per harness
   config.schema.json       #   managed: describes config.json (drives editor validation)
   config.json              #   ← YOURS. Seeded once; values never overwritten. See below.
+  MANUAL-STEPS.md          #   generated per-machine checklist of what the installer couldn't do
+                           #   (git-ignored via a managed .spec-workflow/.gitignore — don't commit)
 specs/                     # your specs (SPEC-N-*.md) + INDEX.md   ← living data, seeded once
                            #   (what one looks like: docs/example-spec.md)
 docs/PRD.md                # living data, seeded once
 docs/SECURITY-RULES.md     # living data, seeded once (drift-notified on update)
-AGENTS.md                  # neutral project memory, seeded once
+AGENTS.md                  # neutral project memory, seeded once (or workflow section appended if it exists)
 spec-workflow.supplemental.md  # your workflow tuning, seeded once, never overwritten
 .claude/ .opencode/ ...    # APM-deployed rules/commands/agents + our finish hooks & agent models
 ```

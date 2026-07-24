@@ -6,13 +6,15 @@
 #   2. Deploys the enforcement machinery into a committed .spec-workflow/ dir (MANAGED: overwritten).
 #   3. Seeds LIVE instances (specs/INDEX.md, docs/PRD.md, docs/SECURITY-RULES.md, AGENTS.md,
 #      the supplemental-rules escape hatch, config.json) only if ABSENT — never clobbers living data.
+#      For an EXISTING AGENTS.md it offers to append the workflow section (or records a manual step).
 #   4. Prints a drift notice for seed-once security rules that diverge from upstream.
 #   5. MERGES the project config forward: adds entries for subagents this version introduces, retires
 #      (never deletes) entries for ones it no longer ships, and prompts for any model left unset.
 #   6. Wires git core.hooksPath with DETECT-AND-PRESERVE (never silently steals an existing value).
 #   7. Emits each present harness's native finish hook and stamps each agent's configured model
 #      (delegates to emit-harness-hooks.sh / emit-agent-models.sh).
-#   8. Prints a one-line-per-item summary.
+#   8. Collects every thing it could NOT do (via a cross-process notice sink shared with the emit-*.sh
+#      scripts) into a persisted checklist at .spec-workflow/MANUAL-STEPS.md, and prints a summary.
 #
 # Requires jq: the project config is JSON. Checked up front so we fail before touching anything.
 set -uo pipefail
@@ -32,13 +34,26 @@ config_require_jq || exit 1
 echo "spec-driven-workflow: installing into $ROOT"
 seeded=(); skipped=()
 
+# Is this an interactive run? Decided once, reused for prompts (AGENTS.md merge, model choices).
+INTERACTIVE=0; [ -t 0 ] && [ -t 1 ] && [ -z "${CI:-}" ] && INTERACTIVE=1
+
 # --- 2. Deploy enforcement machinery (MANAGED — overwrite each run) ---
 SW="$ROOT/.spec-workflow"
 mkdir -p "$SW/hooks" "$SW/templates"
+
+# Manual-steps sink: a transient file every part of the installer (incl. the delegated emit-*.sh
+# subprocesses) appends to via notice_add. Rendered into .spec-workflow/MANUAL-STEPS.md at the end.
+SPEC_WORKFLOW_NOTICES="$(mktemp 2>/dev/null || echo "$SW/.install-notices.$$")"; export SPEC_WORKFLOW_NOTICES
+: > "$SPEC_WORKFLOW_NOTICES"
+trap 'rm -f "$SPEC_WORKFLOW_NOTICES"' EXIT
 cp "$SELF/check-ac-closeout.sh" "$SELF/check-status-sync.sh" "$SELF/check-spec-version.sh" "$SELF/pre-commit" "$SW/hooks/"
 cp "$SELF/finish-hook.spec.json" "$SW/"
 cp "$PKG/templates/spec.template.md" "$PKG/templates/INDEX.template.md" "$PKG/templates/PRD.template.md" "$SW/templates/" 2>/dev/null || true
 chmod +x "$SW/hooks/"*.sh "$SW/hooks/pre-commit" 2>/dev/null || true
+
+# MANAGED: MANUAL-STEPS.md is regenerated per environment (it reflects the machine that ran the
+# installer), so keep it out of version control. Written each run so the ignore stays in place.
+printf '%s\n' 'MANUAL-STEPS.md' '.install-notices.*' > "$SW/.gitignore"
 
 # checks.sha256 generated over the DEPLOYED check scripts (post-compile) for the S6 integrity gate.
 ( cd "$SW/hooks" \
@@ -53,11 +68,44 @@ seed_if_absent() {   # <src> <dest-rel>
   mkdir -p "$(dirname "$dest")"
   cp "$src" "$dest" && seeded+=("$2")
 }
+
+# AGENTS.md is workflow-managed guidance, not a plain scaffold: seed it whole when absent, and when it
+# already exists, offer to APPEND just the workflow section (guarded by a sentinel) so an existing
+# project's own AGENTS.md gains the SDD context. Never rewrites the user's own prose.
+handle_agents_md() {
+  local dest="$ROOT/AGENTS.md"
+  local header="$PKG/live-seed/AGENTS.md.stub" snippet="$PKG/live-seed/AGENTS.snippet.md"
+  if [ ! -e "$dest" ]; then
+    { sed "s/{{PROJECT_NAME}}/$(basename "$ROOT")/g" "$header"; echo; cat "$snippet"; } > "$dest" \
+      && seeded+=("AGENTS.md")
+    return
+  fi
+  # Existing file already carries our section? Leave it entirely alone (keeps `apm update` quiet).
+  if grep -qF "spec-workflow:begin" "$dest"; then skipped+=("AGENTS.md"); return; fi
+  # Permanently opted out of the merge?
+  if [ -f "$SW/.no-agents-merge" ]; then skipped+=("AGENTS.md"); return; fi
+  # Offer to append the section interactively; otherwise record it as a manual step.
+  if [ "$INTERACTIVE" -eq 1 ]; then
+    printf '\n  Your AGENTS.md exists but has no spec-driven-workflow section.\n'
+    printf '    Append it now? (keeps your content; adds one marked section) [y/N] '
+    local reply; read -r reply || reply=""
+    case "$reply" in
+      [yY]|[yY][eE][sS])
+        [ -n "$(tail -c1 "$dest" 2>/dev/null)" ] && printf '\n' >> "$dest"   # ensure a trailing newline first
+        { printf '\n'; cat "$snippet"; } >> "$dest"
+        echo "  [agents] appended workflow section to existing AGENTS.md — review it"
+        return ;;
+    esac
+  fi
+  skipped+=("AGENTS.md")
+  notice_add "AGENTS.md exists without the workflow section — append the block from $PKG/live-seed/AGENTS.snippet.md (or 'touch .spec-workflow/.no-agents-merge' to silence)."
+}
+
 mkdir -p "$ROOT/specs" "$ROOT/docs"
 seed_if_absent "$PKG/templates/INDEX.template.md"  "specs/INDEX.md"
 seed_if_absent "$PKG/templates/PRD.template.md"    "docs/PRD.md"
 seed_if_absent "$PKG/live-seed/security-rules.md"  "docs/SECURITY-RULES.md"
-seed_if_absent "$PKG/live-seed/AGENTS.md.stub"     "AGENTS.md"
+handle_agents_md
 seed_if_absent "$PKG/templates/supplemental-rules.md" "spec-workflow.supplemental.md"
 seed_if_absent "$PKG/live-seed/config.stub.json"    ".spec-workflow/config.json"
 [ ${#seeded[@]}  -gt 0 ] && echo "  [seed]   created: ${seeded[*]}"
@@ -69,6 +117,7 @@ cp "$PKG/live-seed/config.schema.json" "$SW/config.schema.json" 2>/dev/null || t
 # --- 4. Drift notice for seed-once security rules (S3) ---
 if [ -f "$ROOT/docs/SECURITY-RULES.md" ] && ! cmp -s "$ROOT/docs/SECURITY-RULES.md" "$PKG/live-seed/security-rules.md"; then
   echo "  [drift]  docs/SECURITY-RULES.md differs from upstream — review changes (diff against .spec-workflow reference or the package). Not modified."
+  notice_add "docs/SECURITY-RULES.md diverges from upstream — review the diff (against the package's live-seed/security-rules.md)."
 fi
 
 # --- 5. Merge the project config forward, then prompt for anything unset ---
@@ -78,7 +127,8 @@ CONFIG="$SW/config.json"
 CONFIG_OK=1
 config_validate "$CONFIG"; case $? in
   1) exit 1 ;;          # malformed — abort before compounding a user typo
-  2) CONFIG_OK=0 ;;     # schema newer than we understand — leave it alone, skip stamping
+  2) CONFIG_OK=0        # schema newer than we understand — leave it alone, skip stamping
+     notice_add "config schema in .spec-workflow/config.json is newer than this package understands — upgrade spec-driven-workflow ('apm update'); reviewer models were NOT stamped this run." ;;
 esac
 
 shipped=""
@@ -120,7 +170,7 @@ harnesses=""
 [ -d "$ROOT/.opencode/agents" ] && harnesses="$harnesses opencode"
 
 if [ "$CONFIG_OK" -eq 1 ] && [ -n "$harnesses" ]; then
-  if [ -t 0 ] && [ -t 1 ] && [ -z "${CI:-}" ]; then
+  if [ "$INTERACTIVE" -eq 1 ]; then
     asked=0
     for stem in $shipped; do
       for h in $harnesses; do
@@ -142,6 +192,7 @@ if [ "$CONFIG_OK" -eq 1 ] && [ -n "$harnesses" ]; then
       for h in $harnesses; do
         [ -z "$(config_model_for "$stem" "$h")" ] || continue
         echo "  [config] non-interactive — models unset; edit .spec-workflow/config.json to choose"
+        notice_add "One or more reviewer subagents have no model set — edit .spec-workflow/config.json (or re-run this installer interactively) to choose; unset agents inherit the harness default."
         break 2
       done
     done
@@ -163,16 +214,48 @@ if git -C "$ROOT" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
       echo "           To also run the spec-workflow checks, chain them from your existing pre-commit:"
       echo "             SPEC_WORKFLOW_ROOT=\"\$(git rev-parse --show-toplevel)\" bash \"\$(git rev-parse --show-toplevel)/$target/pre-commit\""
       echo "           Or opt out permanently: touch $SW/.no-git-hooks"
+      notice_add "git core.hooksPath is already '$existing' — the spec-workflow pre-commit gate is NOT active. Chain it from your existing pre-commit (SPEC_WORKFLOW_ROOT=\"\$(git rev-parse --show-toplevel)\" bash \"\$(git rev-parse --show-toplevel)/$target/pre-commit\") or 'touch $SW/.no-git-hooks' to opt out."
     fi
   fi
 else
   echo "  [git]    not a git work-tree — skipped core.hooksPath wiring (run 'apm install' again after 'git init')"
+  notice_add "Not a git work-tree — the pre-commit gate could not be wired. Run 'git init' then re-run the installer."
 fi
 
 # --- 7. Emit per-harness native finish hooks, then stamp each agent's configured model ---
-bash "$SELF/emit-harness-hooks.sh" "$ROOT" "$SW" || echo "  [hooks]  per-harness hook emit reported an issue (git floor still enforces)"
+bash "$SELF/emit-harness-hooks.sh" "$ROOT" "$SW" || { echo "  [hooks]  per-harness hook emit reported an issue (git floor still enforces)"; notice_add "Per-harness finish-hook emit failed — the git pre-commit floor still enforces, but no native session-end hook was written. Re-run the installer after resolving the error above."; }
 # Runs every time on purpose: apm update overwrites the deployed agent files, so this re-applies
 # the configured models afterwards.
-[ "$CONFIG_OK" -eq 1 ] && { bash "$SELF/emit-agent-models.sh" "$ROOT" "$PKG" "$CONFIG" || echo "  [models] model stamping reported an issue (agents fall back to the harness default)"; }
+[ "$CONFIG_OK" -eq 1 ] && { bash "$SELF/emit-agent-models.sh" "$ROOT" "$PKG" "$CONFIG" || { echo "  [models] model stamping reported an issue (agents fall back to the harness default)"; notice_add "Model stamping failed — reviewer agents fall back to the harness default. Re-run the installer after resolving the error above."; }; }
+
+# --- 8. Render the collected manual steps into a persisted checklist ---
+render_manual_steps() {
+  local out="$SW/MANUAL-STEPS.md"
+  if [ ! -s "$SPEC_WORKFLOW_NOTICES" ]; then
+    { echo "# Spec-Driven Workflow — Manual Steps"; echo; echo "_✓ No outstanding manual steps as of the last install/update._"; } > "$out"
+    return
+  fi
+  # Preserve any items the user already ticked off (best-effort match on the item text against the
+  # previous file). Read the sink line by line and emit one checkbox per notice.
+  {
+    echo "# Spec-Driven Workflow — Manual Steps"
+    echo
+    echo "_Regenerated by the installer on each \`apm install\` / \`apm update\`. Resolved items drop off"
+    echo "automatically next run; check off the rest as you complete them. Wording may change across"
+    echo "package versions, which can reset a checkmark._"
+    echo
+    while IFS= read -r line; do
+      [ -n "$line" ] || continue
+      local box="- [ ]"
+      # Was this exact item previously checked? Keep it checked. -e is required because the pattern
+      # begins with "-", which grep would otherwise parse as options.
+      if [ -f "$out" ] && grep -qxF -e "- [x] $line" "$out" 2>/dev/null; then box="- [x]"; fi
+      echo "$box $line"
+    done < "$SPEC_WORKFLOW_NOTICES"
+  } > "$out.tmp" && mv "$out.tmp" "$out"
+  local n; n=$(grep -c '^- \[' "$out" 2>/dev/null || echo 0)
+  echo "  [manual] $n step(s) need your attention — see .spec-workflow/MANUAL-STEPS.md"
+}
+render_manual_steps
 
 echo "spec-driven-workflow: done."
