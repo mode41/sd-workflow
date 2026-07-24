@@ -4,8 +4,9 @@
 # Runs on every `apm install` / `apm update`. Fully auditable, no network access. It:
 #   1. Resolves the consumer project ROOT robustly (never trusts the post-install CWD).
 #   2. Deploys the enforcement machinery into a committed .spec-workflow/ dir (MANAGED: overwritten).
-#   3. Seeds LIVE instances (specs/INDEX.md, docs/PRD.md, docs/SECURITY-RULES.md, AGENTS.md,
-#      the supplemental-rules escape hatch, config.json) only if ABSENT — never clobbers living data.
+#   3. Seeds LIVE instances (specs/INDEX.md, docs/PRD.md, docs/SECURITY-RULES.md, docs/context-map.md,
+#      AGENTS.md, the supplemental-rules escape hatch, config.json) only if ABSENT — never clobbers
+#      living data.
 #      For an EXISTING AGENTS.md it offers to append the workflow section (or records a manual step).
 #   4. Prints a drift notice for seed-once security rules that diverge from upstream.
 #   5. MERGES the project config forward: adds entries for subagents this version introduces, retires
@@ -48,7 +49,7 @@ SPEC_WORKFLOW_NOTICES="$(mktemp 2>/dev/null || echo "$SW/.install-notices.$$")";
 trap 'rm -f "$SPEC_WORKFLOW_NOTICES"' EXIT
 cp "$SELF/check-ac-closeout.sh" "$SELF/check-status-sync.sh" "$SELF/check-spec-version.sh" "$SELF/pre-commit" "$SW/hooks/"
 cp "$SELF/finish-hook.spec.json" "$SW/"
-cp "$PKG/templates/spec.template.md" "$PKG/templates/INDEX.template.md" "$PKG/templates/PRD.template.md" "$SW/templates/" 2>/dev/null || true
+cp "$PKG/templates/spec.template.md" "$PKG/templates/INDEX.template.md" "$PKG/templates/PRD.template.md" "$PKG/templates/context-map.template.md" "$SW/templates/" 2>/dev/null || true
 chmod +x "$SW/hooks/"*.sh "$SW/hooks/pre-commit" 2>/dev/null || true
 
 # MANAGED: MANUAL-STEPS.md is regenerated per environment (it reflects the machine that ran the
@@ -105,11 +106,22 @@ mkdir -p "$ROOT/specs" "$ROOT/docs"
 seed_if_absent "$PKG/templates/INDEX.template.md"  "specs/INDEX.md"
 seed_if_absent "$PKG/templates/PRD.template.md"    "docs/PRD.md"
 seed_if_absent "$PKG/live-seed/security-rules.md"  "docs/SECURITY-RULES.md"
+seed_if_absent "$PKG/templates/context-map.template.md" "docs/context-map.md"
 handle_agents_md
 seed_if_absent "$PKG/templates/supplemental-rules.md" "spec-workflow.supplemental.md"
 seed_if_absent "$PKG/live-seed/config.stub.json"    ".spec-workflow/config.json"
 [ ${#seeded[@]}  -gt 0 ] && echo "  [seed]   created: ${seeded[*]}"
 [ ${#skipped[@]} -gt 0 ] && echo "  [seed]   kept existing (not clobbered): ${skipped[*]}"
+
+# One-time nudge: a freshly-seeded context map still holds only the default rows. Invite the user to
+# point it at where their real governing context lives (or connect an MCP context provider). Gated on
+# fresh-seed so it fires once and never re-nags — seed_if_absent won't recreate an existing file.
+if [ ${#seeded[@]} -gt 0 ]; then
+  case " ${seeded[*]} " in
+    *" docs/context-map.md "*)
+      notice_add "Populate docs/context-map.md — point it at where your architecture, security, business, ADR, and UX context actually lives (repo files, Confluence/Notion URLs, or an MCP context provider such as architrace). See docs/extending-with-bundles.md." ;;
+  esac
+fi
 
 # The schema is MANAGED (refreshed each run) — it describes the format, not your choices.
 cp "$PKG/live-seed/config.schema.json" "$SW/config.schema.json" 2>/dev/null || true

@@ -49,6 +49,59 @@ kind: stack            # or: design
 - Commands: `uv run pytest -q` (unit), `uv run pytest -m integration` (integration)
 ```
 
+## Context sources (files & MCP providers)
+
+Separate from the profile seam — and equally frozen in core v1 — is the **context-source seam**: how
+the workflow discovers *where a project's governing context lives* (architecture docs, security rules,
+business/product context, ADRs, UX guidelines). The core no longer hardcodes those locations; it reads
+them from one fixed-path manifest.
+
+| File | Consumed by | Purpose |
+|------|-------------|---------|
+| `docs/context-map.md` | `/requirements`, `/technical-design`, `/frontend-architecture`, the plan-review pipeline, the `security` rule | Says where each `kind` of governing context lives — as repo files, external URLs, or an MCP provider. |
+
+Unlike the bundle-owned profile files, **`docs/context-map.md` is a *living* file** — the installer
+seeds it once (from the shipped template) and never clobbers it; the consumer owns and edits it. It
+carries front-matter **`context-schema: N`**, range-checked exactly like `profile-schema` (core v1
+supports `context-schema: 1`; on an unsupported value a consumer prints `context schema N unsupported`
+and runs on discovery alone).
+
+The manifest lists two kinds of **source**:
+
+- **File** — a repo path *or* an external URL (Confluence, Notion, a wiki page). Read directly.
+- **Provider** — an MCP tool that serves governing context **scoped** to the part of the system a
+  piece of work touches, queried live. Declared in the manifest; connected in the harness's MCP
+  settings (`.mcp.json` / `apm.yml` `dependencies.mcp`), **never** in the manifest — no endpoints or
+  credentials live in the living file.
+
+Rules the core guarantees:
+
+- **Fixed path.** Exactly `docs/context-map.md` — no alternates. This is the whole contract.
+- **`kind` vocabulary (closed set).** `business`, `architecture`, `adr`, `security`, `ux`, `design`,
+  `other`.
+- **Precedence, per kind.** Query a connected **provider** that serves the kind → else read the listed
+  **file(s)** → else **discover** the project's own patterns from the codebase. Every layer is
+  optional; an absent or empty manifest just means "discover."
+- **Defaults, not assumptions.** The seeded manifest ships default rows (`architecture` →
+  `ARCHITECTURE.md`, `business` → `docs/PRD.md`, `security` → `docs/SECURITY-RULES.md`) so a greenfield
+  project works untouched. Any row may be repointed at an external tool, replaced by a provider, or
+  deleted — the workflow follows the map, not the filename.
+
+### The provider contract
+
+A **context provider** is an MCP tool matching this shape:
+
+- **Input:** a *scope key* (the services/system the current work touches — the workflow passes the
+  free-text `**Services:**` value a tech design already computes) plus the requested `kind`(s).
+- **Output:** the governing context for that scope and those kinds.
+- **Degradation:** if the tool is not connected, the consumer silently falls back to files, then
+  discovery. A missing provider never blocks the workflow.
+
+The seam is **vendor-neutral**: any MCP tool matching this contract works, named in the manifest's
+Providers table. The **reference provider is [architrace.io](https://architrace.io)**, which serves an
+organisation's governing context (Confluence, Notion, git, …) scoped to each system. Connect its MCP
+server in your harness settings and add (or uncomment) its row in `docs/context-map.md`.
+
 ## Authoring a bundle (constraints)
 
 A bundle is a normal APM package that a consumer adds alongside the core:

@@ -10,9 +10,13 @@ tuning goes in `spec-workflow.supplemental.md`.
 Key locations:
 - `specs/` — spec folders (`SPEC-N-name/`, each with `spec.md` + `tech-design.md` +
   `implementation.md` + any attachments) and `specs/INDEX.md` (the status source of truth).
-- `docs/PRD.md` — product requirements. `docs/SECURITY-RULES.md` — security rules.
+- `docs/context-map.md` — where this project's governing context lives (architecture, security,
+  business, ADRs, UX). Repo files by default, but each row may point at an external tool (Confluence,
+  Notion) or an MCP context provider; the commands consult it to locate context.
+- `docs/PRD.md` — product requirements (default `business` source). `docs/SECURITY-RULES.md` — default
+  `security` source. `ARCHITECTURE.md` — default `architecture` source (create as the project takes
+  shape). All three are just the defaults the context map points at; repoint any of them as needed.
 - `.spec-workflow/` — the deployed enforcement machinery (git pre-commit + finish-hook checks).
-- `ARCHITECTURE.md` — architectural constraints and invariants (create as the project takes shape).
 
 Start a new project with `/requirements <your idea>`; then `/technical-design SPEC-1`, implement on a
 `SPEC-N` branch, `/write-tests`, and close out. Status must stay identical in each spec's `spec.md`

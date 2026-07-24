@@ -29,7 +29,12 @@ The exact paths and tools depend on the project's frontend stack; discover them,
    frontend but no profile, proceed with the stack-neutral reasoning below, but do **not** invent
    design-system rules the project hasn't established — flag that design conformance is unenforced
    until a profile is added.
-3. **Architecture constraints:** Read `ARCHITECTURE.md` (if it exists)
+3. **Architecture & UX context (the context-map seam):** consult `docs/context-map.md` if it exists to
+   locate architectural constraints (`kind=architecture`, default `ARCHITECTURE.md`) and any UX
+   guidelines (`kind=ux`). For each, query a listed MCP context provider if its tool is connected, else
+   read the listed source, else discover from the codebase. Honor its `context-schema:` front-matter —
+   this core supports `1`; on an unsupported value note `context schema N unsupported` and run on
+   discovery alone.
 4. **Theme tokens:** Read the design-token entry point (discover it — the CSS/theme root)
 5. **Routing & providers:** Read the app root / entry point
 6. **Existing components:** Scan the project's component, page, hook, and provider directories
