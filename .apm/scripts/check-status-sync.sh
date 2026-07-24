@@ -14,11 +14,17 @@ branch=$(git -C "$dir" branch --show-current 2>/dev/null) || exit 0
 [[ "$branch" =~ (SPEC-[0-9]+) ]] || exit 0
 id="${BASH_REMATCH[1]}"
 
-# Resolve the spec (main tree, then backlog).
-file=$(ls "$dir"/specs/"${id}"-*.md 2>/dev/null | head -1)
-[[ -n "$file" ]] || file=$(ls "$dir"/specs/backlog/"${id}"-*.md 2>/dev/null | head -1)
-[[ -n "$file" && -f "$file" ]] || exit 0
+# A spec is a FOLDER: specs/SPEC-N-name/spec.md (+ tech-design.md, implementation.md, attachments).
+# Resolve the folder main-tree first, then backlog (preserves "main before backlog"), then its
+# spec.md. The trailing '-' stops SPEC-2 matching SPEC-20. Keep in sync with check-spec-version.sh's
+# canonical-path regex.
+specdir=$(ls -d "$dir"/specs/"${id}"-*/ 2>/dev/null | head -1)
+[[ -n "$specdir" ]] || specdir=$(ls -d "$dir"/specs/backlog/"${id}"-*/ 2>/dev/null | head -1)
+file="${specdir}spec.md"
+[[ -n "$specdir" && -f "$file" ]] || exit 0
 [[ -f "$index" ]] || exit 0
+# Display label: the file basename is always "spec.md", so show the folder name (SPEC-N-name) instead.
+label="${specdir%/}"; label="${label##*/}"
 
 LEGAL='In Planning|In Progress|In Review|Validated|Planned|Deprecated'  # longest-first
 block() { echo "Status-sync check for ${id}: $1" >&2; exit 2; }
@@ -28,16 +34,16 @@ rank() { case "$1" in
 
 # --- Header status word ---
 hdr=$(grep -m1 '^\*\*Status:\*\*' "$file" | grep -oE "$LEGAL" | head -1)
-[[ -n "$hdr" ]] || block "the '**Status:**' header in ${file##*/} is missing or not one of: In Planning, Planned, In Progress, In Review, Validated. Set it to the legal token that matches the spec's true state, and set the same word in its specs/INDEX.md row."
+[[ -n "$hdr" ]] || block "the '**Status:**' header in ${label} is missing or not one of: In Planning, Planned, In Progress, In Review, Validated. Set it to the legal token that matches the spec's true state, and set the same word in its specs/INDEX.md row."
 
 # --- INDEX row status word (require exactly one row) ---
 rows=$(grep -cE "^\| ${id} \|" "$index")
-[[ "$rows" == "1" ]] || block "expected exactly one specs/INDEX.md row for ${id}, found ${rows}. Fix the table (add the missing row or remove the duplicate) so ${id} appears once, with a status matching ${file##*/}."
+[[ "$rows" == "1" ]] || block "expected exactly one specs/INDEX.md row for ${id}, found ${rows}. Fix the table (add the missing row or remove the duplicate) so ${id} appears once, with a status matching ${label}."
 idx=$(grep -m1 -E "^\| ${id} \|" "$index" | awk -F'|' '{print $5}' | grep -oE "$LEGAL" | head -1)
 [[ -n "$idx" ]] || block "the specs/INDEX.md row for ${id} has no legal status word. Set it to match the spec header ('${hdr}')."
 
 # --- Header vs INDEX consistency ---
-[[ "$hdr" == "$idx" ]] || block "status drift — ${file##*/} header says '${hdr}' but specs/INDEX.md says '${idx}'. Resolve: determine the true state from the spec's sections, AC checkboxes and test evidence, then set the ONE correct status in BOTH places."
+[[ "$hdr" == "$idx" ]] || block "status drift — ${label} header says '${hdr}' but specs/INDEX.md says '${idx}'. Resolve: determine the true state from the spec's sections, AC checkboxes and test evidence, then set the ONE correct status in BOTH places."
 
 # --- Deprecated is a frozen terminal state: header==INDEX is enough, skip reality floors ---
 # (a deprecated spec keeps whatever sections it had; do not force it to In Review / Validated).
@@ -45,14 +51,14 @@ idx=$(grep -m1 -E "^\| ${id} \|" "$index" | awk -F'|' '{print $5}' | grep -oE "$
 
 # --- Reality floors (strongest first) ---
 r=$(rank "$hdr")
-closeout=0; grep -qE '^## Implementation' "$file" && closeout=1
-# close-out complete = an Implementation section exists AND no unchecked non-DESCOPED AC remains
+closeout=0; [[ -f "${specdir}implementation.md" ]] && closeout=1
+# close-out complete = implementation.md exists AND no unchecked non-DESCOPED AC remains in spec.md
 if [[ "$closeout" == "1" ]] && ! grep -E '^- \[ \] AC-' "$file" | grep -qvi 'descoped'; then
-  [[ "$hdr" == "Validated" ]] || block "close-out is complete (Implementation section present, all ACs ticked/DESCOPED) but status is '${hdr}'. Set both ${file##*/} and its INDEX row to 'Validated'."
+  [[ "$hdr" == "Validated" ]] || block "close-out is complete (implementation.md present, all ACs ticked/DESCOPED) but status is '${hdr}'. Set both ${label} and its INDEX row to 'Validated'."
 elif [[ "$closeout" == "1" ]]; then
-  (( r >= 3 )) || block "an '## Implementation & Verification' section exists (verification underway) but status is '${hdr}'. Advance both ${file##*/} and its INDEX row to at least 'In Review'."
+  (( r >= 3 )) || block "an implementation.md (close-out evidence) exists (verification underway) but status is '${hdr}'. Advance both ${label} and its INDEX row to at least 'In Review'."
 else
-  # On a SPEC-N branch with no verification section yet ⇒ implementation has started.
-  (( r >= 2 )) || block "you are on the ${id} implementation branch but status is '${hdr}'. Set both ${file##*/} and its INDEX row to 'In Progress' (or further, if verification/close-out has begun)."
+  # On a SPEC-N branch with no implementation.md yet ⇒ implementation has started.
+  (( r >= 2 )) || block "you are on the ${id} implementation branch but status is '${hdr}'. Set both ${label} and its INDEX row to 'In Progress' (or further, if verification/close-out has begun)."
 fi
 exit 0

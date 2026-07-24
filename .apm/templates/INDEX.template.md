@@ -29,7 +29,7 @@ spec's own header + changelog are).
 | ID | Spec | Priority | Status | Version | File | Created |
 |----|------|----------|--------|---------|------|---------|
 | <!-- Add specs below; example row: -->
-| <!-- SPEC-1 | Example Spec | P0 (MVP) | In Planning | v1 | [Spec](SPEC-1-example-spec.md) | YYYY-MM-DD | -->
+| <!-- SPEC-1 | Example Spec | P0 (MVP) | In Planning | v1 | [Spec](SPEC-1-example-spec/spec.md) | YYYY-MM-DD | -->
 
 <!-- Add specs above this line -->
 
