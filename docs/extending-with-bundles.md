@@ -8,18 +8,38 @@ information-management system. Stack- and design-specific guidance is instead pr
 document is that contract. Freezing it means a bundle — or your own stack-init tool — can be built
 later **without ever forcing a change to the core**.
 
-This document is the human-facing source of truth for the seam; the core's commands carry only the
-one-line consult step they need.
+This document is the human-facing source of truth for the extension point; the core's commands carry
+only the one-line consult step they need.
 
-## The profile seam (frozen in core v1)
+## Where these files live
+
+Every file in this contract lives under **`.spec-workflow/`**, this package's namespace — not under
+`docs/`. That directory is committed, and `docs/` is a published site root in many projects, so
+machine-read configuration seeded there would render on the public docs site. `docs/` holds the
+project's *prose* (`docs/PRD.md`, `docs/SECURITY-RULES.md`); `.spec-workflow/` holds the package's
+plumbing and config.
+
+`.spec-workflow/` is **mixed**, and each file's ownership is what matters:
+
+- **Managed** — refreshed on every `apm install` / `apm update` (`hooks/`, `templates/`,
+  `config.schema.json`, `finish-hook.spec.json`).
+- **Seeded once, never clobbered** — yours to edit (`config.json`, `context-map.md`).
+- **Bundle-owned** — written by a bundle or your own tooling (`profiles/`).
+
+> **Guarantee: the core never deletes `.spec-workflow/profiles/`.** The installer only ever creates
+> directories and copies specific files into them; it has no recursive delete. The one exception is
+> deliberate and narrow: it prunes `hooks/check-*.sh` that the installed version no longer ships. A
+> bundle may write into `profiles/` and rely on it surviving every core update.
+
+## The profile extension point (frozen)
 
 Core commands look for two optional profile files at fixed paths. A bundle (or your own tooling)
 creates them; nothing else in the core needs to change.
 
 | File | Consumed by | Purpose |
 |------|-------------|---------|
-| `docs/stack-profile.md`  | `/write-tests`, `/technical-design` | Stack specifics: test framework, runner, assertion lib, integration-test strategy, fixtures, migration tool, layering, build/test commands. |
-| `docs/design-profile.md` | `/frontend-architecture` | Design specifics: visual language, design tokens, component conventions, the design system / corporate design. |
+| `.spec-workflow/profiles/stack.md`  | `/write-tests`, `/technical-design` | Stack specifics: test framework, runner, assertion lib, integration-test strategy, fixtures, migration tool, layering, build/test commands. |
+| `.spec-workflow/profiles/design.md` | `/frontend-architecture` | Design specifics: visual language, design tokens, component conventions, the design system / corporate design. |
 
 Rules the core guarantees (and a bundle must honor):
 
@@ -27,7 +47,7 @@ Rules the core guarantees (and a bundle must honor):
 - **Schema version.** Each profile carries front-matter `profile-schema: N` (integer). The core reads
   it and **range-checks** it. On an unsupported schema it **degrades gracefully** — runs on discovery
   alone and prints a one-line `profile schema N unsupported` notice — so an old bundle + new core (or
-  vice versa) never silently mis-reads. Core v1 supports `profile-schema: 1`.
+  vice versa) never silently mis-reads. This core supports `profile-schema: 1`.
 - **Optional by design.** No profile ⇒ commands discover the project's own patterns and never invent
   stack/design rules. A plain static website needs **zero** bundles. `/frontend-architecture` on a
   project with no frontend and no design profile is inert (it says so and stops).
@@ -51,20 +71,24 @@ kind: stack            # or: design
 
 ## Context sources (files & MCP providers)
 
-Separate from the profile seam — and equally frozen in core v1 — is the **context-source seam**: how
-the workflow discovers *where a project's governing context lives* (architecture docs, security rules,
-business/product context, ADRs, UX guidelines). The core no longer hardcodes those locations; it reads
-them from one fixed-path manifest.
+Separate from the profile extension point — and equally frozen — is the **context-source extension
+point**: how the workflow discovers *where a project's governing context lives* (architecture docs,
+security rules, business/product context, ADRs, UX guidelines). The core no longer hardcodes those
+locations; it reads them from one fixed-path manifest.
 
-| File | Consumed by | Purpose |
-|------|-------------|---------|
-| `docs/context-map.md` | `/requirements`, `/technical-design`, `/frontend-architecture`, the plan-review pipeline, the `security` rule | Says where each `kind` of governing context lives — as repo files, external URLs, or an MCP provider. |
+| File | Purpose |
+|------|---------|
+| `.spec-workflow/context-map.md` | Says where each `kind` of governing context lives — as repo files, external URLs, or an MCP provider. |
 
-Unlike the bundle-owned profile files, **`docs/context-map.md` is a *living* file** — the installer
-seeds it once (from the shipped template) and never clobbers it; the consumer owns and edits it. It
-carries front-matter **`context-schema: N`**, range-checked exactly like `profile-schema` (core v1
-supports `context-schema: 1`; on an unsupported value a consumer prints `context schema N unsupported`
-and runs on discovery alone).
+Consumed by `/requirements`, `/technical-design`, `/frontend-architecture`, the plan-review pipeline,
+and the `security`, `code-hygiene`, and `spec-driven-workflow` rules. Every consumer performs the same
+schema range-check and the same three-step precedence below.
+
+Unlike the bundle-owned profile files, **`.spec-workflow/context-map.md` is a *living* file** — the
+installer seeds it once (from the shipped template) and never clobbers it; the consumer owns and edits
+it. It carries front-matter **`context-schema: N`**, range-checked exactly like `profile-schema` (this
+core supports `context-schema: 1`; on an unsupported value a consumer prints
+`context schema N unsupported` and runs on discovery alone).
 
 The manifest lists two kinds of **source**:
 
@@ -76,7 +100,10 @@ The manifest lists two kinds of **source**:
 
 Rules the core guarantees:
 
-- **Fixed path.** Exactly `docs/context-map.md` — no alternates. This is the whole contract.
+- **Fixed path.** Exactly `.spec-workflow/context-map.md` — no alternates. This is the whole contract.
+- **Repo paths resolve from the repository root**, never relative to the manifest's own directory.
+  `docs/PRD.md` means `<repo>/docs/PRD.md`. This is what lets the manifest be relocated without
+  rewriting every row.
 - **`kind` vocabulary (closed set).** `business`, `architecture`, `adr`, `security`, `ux`, `design`,
   `other`.
 - **Precedence, per kind.** Query a connected **provider** that serves the kind → else read the listed
@@ -84,8 +111,10 @@ Rules the core guarantees:
   optional; an absent or empty manifest just means "discover."
 - **Defaults, not assumptions.** The seeded manifest ships default rows (`architecture` →
   `ARCHITECTURE.md`, `business` → `docs/PRD.md`, `security` → `docs/SECURITY-RULES.md`) so a greenfield
-  project works untouched. Any row may be repointed at an external tool, replaced by a provider, or
-  deleted — the workflow follows the map, not the filename.
+  project works untouched. Only two of those are seeded as files — `ARCHITECTURE.md` is yours to
+  create as the project takes shape, and until it exists that kind simply falls through to discovery.
+  Any row may be repointed at an external tool, replaced by a provider, or deleted — the workflow
+  follows the map, not the filename.
 
 ### The provider contract
 
@@ -97,10 +126,27 @@ A **context provider** is an MCP tool matching this shape:
 - **Degradation:** if the tool is not connected, the consumer silently falls back to files, then
   discovery. A missing provider never blocks the workflow.
 
-The seam is **vendor-neutral**: any MCP tool matching this contract works, named in the manifest's
-Providers table. The **reference provider is [architrace.io](https://architrace.io)**, which serves an
-organisation's governing context (Confluence, Notion, git, …) scoped to each system. Connect its MCP
-server in your harness settings and add (or uncomment) its row in `docs/context-map.md`.
+The extension point is **vendor-neutral**: any MCP tool matching this contract works, named in the
+manifest's Providers table. The **reference provider is [architrace.io](https://architrace.io)**,
+which serves an organisation's governing context (Confluence, Notion, git, …) scoped to each system.
+Connect its MCP server in your harness settings and add (or uncomment) its row in
+`.spec-workflow/context-map.md`.
+
+## Schema versions vs. package version
+
+These are independent, and conflating them is a mistake the contract used to invite:
+
+- **`profile-schema` / `context-schema`** describe the *file format*. They change only when the shape
+  of a profile or the manifest changes.
+- **The package version** (`apm.yml`) changes when anything ships, including a path move.
+
+So a release that relocates an extension-point file is a breaking change to the *paths* and bumps the
+package version, while the file *formats* are untouched and both schemas stay at `1` — a bundle would
+need its output paths updated, but its file contents would still be valid.
+
+The core is **pre-1.0**: versions are `0.MINOR.PATCH`, and until a stable major exists a **breaking
+change bumps the minor**. Treat the whole contract as settled in intent but not yet frozen by a major
+version number.
 
 ## Authoring a bundle (constraints)
 
@@ -128,16 +174,22 @@ Constraints the core assumes (stated here as the governing precedent):
 
 ## The stack-init tool idea
 
-Because the seam is just "write a file at a fixed path with a known schema", a lightweight
+Because the extension point is just "write a file at a fixed path with a known schema", a lightweight
 **stack-init tool** (its own APM package, or a small CLI) can interview a project and generate the
-right `docs/stack-profile.md` / `docs/design-profile.md`. It plugs into exactly this contract; the
-core never needs to know it exists.
+right `.spec-workflow/profiles/stack.md` / `.spec-workflow/profiles/design.md`. It plugs into exactly
+this contract; the core never needs to know it exists.
 
 ## Migration when the core evolves
 
 The core's **templates and primitives are managed** — `apm update` refreshes them. Your **living
-files are not** (`specs/INDEX.md`, your specs, `docs/PRD.md`, `docs/SECURITY-RULES.md`). When a core
-update changes a template's format (say a new status word, or a new INDEX column):
+files are not**:
+
+- `specs/INDEX.md` and your specs
+- `docs/PRD.md`, `docs/SECURITY-RULES.md`
+- `.spec-workflow/context-map.md`, `.spec-workflow/config.json`
+- `AGENTS.md`, `spec-workflow.supplemental.md`
+
+When a core update changes a template's format (say a new status word, or a new INDEX column):
 
 1. The core spec-version rules and this changelog flag what changed (read the release notes / diff the
    refreshed `.spec-workflow/templates/` against your living files).

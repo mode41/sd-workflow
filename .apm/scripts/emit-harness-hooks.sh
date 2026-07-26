@@ -13,7 +13,7 @@ set -euo pipefail
 ROOT="$1"
 SPEC_DIR="$2"
 SPEC="$SPEC_DIR/finish-hook.spec.json"
-HOOKS_REL=".spec-workflow/hooks"
+HOOKS_REL=".spec-workflow/hooks"       # overridden below from the spec's hooksDir
 SENTINEL="spec-workflow-finish-hook"   # marker so we can detect our own entries idempotently
 
 SELF="$(cd "$(dirname "$0")" && pwd -P)"
@@ -30,11 +30,15 @@ command -v jq >/dev/null 2>&1 || { log "ERROR: jq is required to merge harness h
 # --- Claude Code: merge a Stop hook into .claude/settings.json ---
 emit_claude() {
   local settings="$ROOT/.claude/settings.json"
-  local cmds=(
-    "bash \"\$CLAUDE_PROJECT_DIR/$HOOKS_REL/check-ac-closeout.sh\"  # $SENTINEL"
-    "bash \"\$CLAUDE_PROJECT_DIR/$HOOKS_REL/check-status-sync.sh\"  # $SENTINEL"
-    "bash \"\$CLAUDE_PROJECT_DIR/$HOOKS_REL/check-spec-version.sh\" # $SENTINEL"
-  )
+  # Discover the checks from the DEPLOYED set — same glob the installer and pre-commit use, so all
+  # three agree by construction rather than by three hand-maintained lists.
+  local cmds=()
+  local script
+  for script in "$SPEC_DIR/hooks/"check-*.sh; do
+    [ -f "$script" ] || continue
+    cmds+=("bash \"\$CLAUDE_PROJECT_DIR/$HOOKS_REL/$(basename "$script")\"  # $SENTINEL")
+  done
+  [ "${#cmds[@]}" -gt 0 ] || { log "no check-*.sh deployed under $HOOKS_REL; skipping Claude Stop hook"; return; }
   local hookobjs; hookobjs=$(printf '%s\n' "${cmds[@]}" | jq -R '{type:"command",command:.}' | jq -s '.')
   local base='{}'
   [ -f "$settings" ] && base=$(cat "$settings")
@@ -57,6 +61,11 @@ emit_unsupported() {
 }
 
 [ -f "$SPEC" ] || { log "no finish-hook.spec.json found; skipping per-harness hooks"; exit 0; }
+
+# The spec supplies the harness-neutral metadata (where the hooks live); WHICH checks run is
+# discovered from the deployed check-*.sh set, so the two can never disagree.
+spec_hooks_dir=$(jq -r '.hooksDir // empty' "$SPEC" 2>/dev/null || true)
+[ -n "$spec_hooks_dir" ] && HOOKS_REL="$spec_hooks_dir"
 
 [ -d "$ROOT/.claude" ]   && emit_claude
 [ -d "$ROOT/.cursor" ]   && emit_unsupported "Cursor"

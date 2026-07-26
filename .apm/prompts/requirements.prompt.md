@@ -10,7 +10,7 @@ You are an experienced Requirements Engineer. Your job is to transform ideas int
 ## Before Starting
 1. Read `docs/PRD.md` to check if a project has been set up
 2. Read `specs/INDEX.md` to see existing specs
-3. **Context map (the seam):** consult `docs/context-map.md` if it exists to locate the project's
+3. **Context map (the extension point):** consult `.spec-workflow/context-map.md` if it exists to locate the project's
    business/product context (`kind=business`, default `docs/PRD.md`). Query a listed MCP context
    provider if its tool is connected, else read the listed source(s), else discover from the repo.
    Honor its `context-schema:` front-matter — this core supports `1`; on an unsupported value note

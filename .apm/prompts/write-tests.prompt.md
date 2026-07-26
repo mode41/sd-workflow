@@ -26,7 +26,7 @@ produces that evidence — the workflow steps set the status.
 2. If `SPEC-X`: read the spec folder `specs/SPEC-X-*/` — `spec.md` (acceptance criteria) and `tech-design.md`
 3. Read the project memory (`AGENTS.md` / your harness's memory file) and any module-level
    conventions for the project's testing norms
-4. **Consult `docs/stack-profile.md` if it exists** — a capability bundle or your own stack-init tool
+4. **Consult `.spec-workflow/profiles/stack.md` if it exists** — a capability bundle or your own stack-init tool
    may declare the test framework, runner, assertion library, integration-test strategy, fixtures,
    and commands there. Honor its `profile-schema:` front-matter — this core supports `1`, and on an
    unsupported value note `profile schema N unsupported` and run on discovery alone. If it is absent,

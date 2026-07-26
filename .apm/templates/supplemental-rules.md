@@ -9,8 +9,9 @@ Use this file for, e.g.:
 
 - Extra conventions your team layers on top of the standard spec lifecycle.
 - Project-specific commit-message or branch-naming rules.
-- Pointers to a stack or design profile (see the workflow's bundle seam:
-  `docs/stack-profile.md` — a bundle or your own stack-init tool populates it).
+- Pointers to a stack or design profile (see the workflow's bundle extension point:
+  `.spec-workflow/profiles/stack.md` and `.spec-workflow/profiles/design.md` — a bundle or your own
+  stack-init tool populates them).
 - Any workflow exceptions your team has agreed on (document the reason).
 
 _Delete these examples and add your own. If you have nothing to add yet, leaving this file as a

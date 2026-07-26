@@ -1,11 +1,6 @@
 {
-  "$comment": "ONE neutral finish-boundary hook spec that WE own. emit-harness-hooks.sh compiles it into each present harness's native hook format (e.g. a Claude Stop hook). This is deliberately NOT an APM hook primitive — APM's hook compilation is unreliable today, so we emit natively ourselves. Scripts are resolved relative to the committed .spec-workflow/hooks/ directory at runtime.",
+  "$comment": "ONE neutral finish-boundary hook spec that WE own, carrying the harness-neutral METADATA for the finish hook. emit-harness-hooks.sh reads 'hooksDir' from here and compiles a native hook for each present harness (e.g. a Claude Stop hook). WHICH checks run is deliberately NOT listed here — it is discovered from the deployed check-*.sh set in hooksDir, the same glob the installer and the git pre-commit use, so the three can never disagree. This is deliberately NOT an APM hook primitive — APM's hook compilation is unreliable today, so we emit natively ourselves.",
   "event": "finish",
   "description": "Spec-Driven Development close-out / status-sync / version guard. Blocks finishing while a SPEC-* spec's acceptance criteria, status, or version have drifted.",
-  "hooksDir": ".spec-workflow/hooks",
-  "runs": [
-    "check-ac-closeout.sh",
-    "check-status-sync.sh",
-    "check-spec-version.sh"
-  ]
+  "hooksDir": ".spec-workflow/hooks"
 }

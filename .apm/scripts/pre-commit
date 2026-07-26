@@ -32,9 +32,11 @@ if [ -f "$SELF/checks.sha256" ]; then
   fi
 fi
 
+# Run every deployed check. The installer deploys (and prunes) this set, so there is no list to keep
+# in sync here. Deliberately a glob and not a read of finish-hook.spec.json: that would need jq, and
+# this hook runs at commit time on any machine, not just where the installer ran.
 rc=0
-for h in check-ac-closeout check-status-sync check-spec-version; do
-  script="$SELF/$h.sh"
+for script in "$SELF"/check-*.sh; do
   [ -f "$script" ] || continue
   SPEC_WORKFLOW_ROOT="$ROOT" bash "$script" || rc=1
 done

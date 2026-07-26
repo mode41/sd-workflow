@@ -29,9 +29,11 @@ Repoint any row at wherever the context actually lives (a repo path or an extern
 delete a row whose content lives only behind a Provider. The three defaults below are just a starting
 point — nothing breaks if you change or remove them.
 
+Repo paths are resolved **from the repository root**, not relative to this file.
+
 | Path | Kind | Purpose |
 |------|------|---------|
-| `ARCHITECTURE.md`        | architecture | Architectural constraints, service boundaries, security invariants |
+| `ARCHITECTURE.md`        | architecture | Architectural constraints, service boundaries, security invariants — *not seeded; create it as the project takes shape, or repoint this row* |
 | `docs/PRD.md`            | business     | Product requirements & vision |
 | `docs/SECURITY-RULES.md` | security     | Security rules |
 
@@ -47,5 +49,6 @@ touches. Uncomment the example row (and connect its MCP server in your harness s
 -->
 
 > Reference provider: **architrace.io** — serves your org's governing context (Confluence, Notion,
-> git, …) scoped to each system. The seam is vendor-neutral: any MCP tool matching the contract works.
-> See `docs/extending-with-bundles.md`.
+> git, …) scoped to each system. The extension point is vendor-neutral: any MCP tool matching the
+> contract works.
+> Full contract: <https://github.com/mode41/sd-workflow/blob/main/docs/extending-with-bundles.md>
