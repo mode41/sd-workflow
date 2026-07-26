@@ -4,7 +4,7 @@
 # Runs on every `apm install` / `apm update`. Fully auditable, no network access. It:
 #   1. Resolves the consumer project ROOT robustly (never trusts the post-install CWD).
 #   2. Deploys the enforcement machinery into a committed .spec-workflow/ dir (MANAGED: overwritten).
-#   3. Seeds LIVE instances (specs/INDEX.md, docs/PRD.md, docs/SECURITY-RULES.md, docs/context-map.md,
+#   3. Seeds LIVE instances (specs/INDEX.md, docs/PRD.md, docs/SECURITY-RULES.md, .spec-workflow/context-map.md,
 #      AGENTS.md, the supplemental-rules escape hatch, config.json) only if ABSENT — never clobbers
 #      living data.
 #      For an EXISTING AGENTS.md it offers to append the workflow section (or records a manual step).
@@ -47,7 +47,18 @@ mkdir -p "$SW/hooks" "$SW/templates"
 SPEC_WORKFLOW_NOTICES="$(mktemp 2>/dev/null || echo "$SW/.install-notices.$$")"; export SPEC_WORKFLOW_NOTICES
 : > "$SPEC_WORKFLOW_NOTICES"
 trap 'rm -f "$SPEC_WORKFLOW_NOTICES"' EXIT
-cp "$SELF/check-ac-closeout.sh" "$SELF/check-status-sync.sh" "$SELF/check-spec-version.sh" "$SELF/pre-commit" "$SW/hooks/"
+# The SHIPPED check-*.sh set is the single source of truth for which checks exist. pre-commit and
+# emit-harness-hooks.sh both discover them by the same glob, so adding or dropping a check is a
+# one-file change here with no list to keep in sync.
+#
+# PRUNE FIRST: a check this version no longer ships must not survive in the deployed hooks dir — the
+# glob in pre-commit would keep running it and the regenerated checks.sha256 would bless it. Safe:
+# hooks/ is MANAGED (overwritten every run) by design.
+for deployed in "$SW/hooks/"check-*.sh; do
+  [ -e "$deployed" ] || continue
+  [ -e "$SELF/$(basename "$deployed")" ] || { rm -f "$deployed"; echo "  [prune]  removed stale hook $(basename "$deployed")"; }
+done
+cp "$SELF"/check-*.sh "$SELF/pre-commit" "$SW/hooks/"
 cp "$SELF/finish-hook.spec.json" "$SW/"
 cp "$PKG/templates/spec.template.md" "$PKG/templates/INDEX.template.md" "$PKG/templates/PRD.template.md" "$PKG/templates/context-map.template.md" "$SW/templates/" 2>/dev/null || true
 chmod +x "$SW/hooks/"*.sh "$SW/hooks/pre-commit" 2>/dev/null || true
@@ -57,9 +68,10 @@ chmod +x "$SW/hooks/"*.sh "$SW/hooks/pre-commit" 2>/dev/null || true
 printf '%s\n' 'MANUAL-STEPS.md' '.install-notices.*' > "$SW/.gitignore"
 
 # checks.sha256 generated over the DEPLOYED check scripts (post-compile) for the S6 integrity gate.
+# Same glob as the deploy above, so the hashed set is exactly the deployed set.
 ( cd "$SW/hooks" \
-  && { command -v sha256sum >/dev/null 2>&1 && sha256sum check-ac-closeout.sh check-status-sync.sh check-spec-version.sh > checks.sha256; } \
-  || { command -v shasum >/dev/null 2>&1 && shasum -a 256 check-ac-closeout.sh check-status-sync.sh check-spec-version.sh > checks.sha256; } ) 2>/dev/null || true
+  && { command -v sha256sum >/dev/null 2>&1 && sha256sum check-*.sh > checks.sha256; } \
+  || { command -v shasum >/dev/null 2>&1 && shasum -a 256 check-*.sh > checks.sha256; } ) 2>/dev/null || true
 echo "  [deploy] enforcement scripts -> .spec-workflow/hooks/ (+ checks.sha256)"
 
 # --- 3. Seed LIVE instances only if absent ---
@@ -106,7 +118,7 @@ mkdir -p "$ROOT/specs" "$ROOT/docs"
 seed_if_absent "$PKG/templates/INDEX.template.md"  "specs/INDEX.md"
 seed_if_absent "$PKG/templates/PRD.template.md"    "docs/PRD.md"
 seed_if_absent "$PKG/live-seed/security-rules.md"  "docs/SECURITY-RULES.md"
-seed_if_absent "$PKG/templates/context-map.template.md" "docs/context-map.md"
+seed_if_absent "$PKG/templates/context-map.template.md" ".spec-workflow/context-map.md"
 handle_agents_md
 seed_if_absent "$PKG/templates/supplemental-rules.md" "spec-workflow.supplemental.md"
 seed_if_absent "$PKG/live-seed/config.stub.json"    ".spec-workflow/config.json"
@@ -118,8 +130,8 @@ seed_if_absent "$PKG/live-seed/config.stub.json"    ".spec-workflow/config.json"
 # fresh-seed so it fires once and never re-nags — seed_if_absent won't recreate an existing file.
 if [ ${#seeded[@]} -gt 0 ]; then
   case " ${seeded[*]} " in
-    *" docs/context-map.md "*)
-      notice_add "Populate docs/context-map.md — point it at where your architecture, security, business, ADR, and UX context actually lives (repo files, Confluence/Notion URLs, or an MCP context provider such as architrace). See docs/extending-with-bundles.md." ;;
+    *" .spec-workflow/context-map.md "*)
+      notice_add "Populate .spec-workflow/context-map.md — point it at where your architecture, security, business, ADR, and UX context actually lives (repo files, Confluence/Notion URLs, or an MCP context provider such as architrace). Contract: https://github.com/nodeline/spec-driven-workflow/blob/main/docs/extending-with-bundles.md" ;;
   esac
 fi
 
@@ -128,8 +140,8 @@ cp "$PKG/live-seed/config.schema.json" "$SW/config.schema.json" 2>/dev/null || t
 
 # --- 4. Drift notice for seed-once security rules (S3) ---
 if [ -f "$ROOT/docs/SECURITY-RULES.md" ] && ! cmp -s "$ROOT/docs/SECURITY-RULES.md" "$PKG/live-seed/security-rules.md"; then
-  echo "  [drift]  docs/SECURITY-RULES.md differs from upstream — review changes (diff against .spec-workflow reference or the package). Not modified."
-  notice_add "docs/SECURITY-RULES.md diverges from upstream — review the diff (against the package's live-seed/security-rules.md)."
+  echo "  [drift]  docs/SECURITY-RULES.md differs from upstream — review changes (diff against $PKG/live-seed/security-rules.md). Not modified."
+  notice_add "docs/SECURITY-RULES.md diverges from upstream — review the diff: diff docs/SECURITY-RULES.md $PKG/live-seed/security-rules.md"
 fi
 
 # --- 5. Merge the project config forward, then prompt for anything unset ---

@@ -10,10 +10,12 @@ branch=$(git -C "$dir" branch --show-current 2>/dev/null) || exit 0
 [[ "$branch" =~ (SPEC-[0-9]+) ]] || exit 0
 id="${BASH_REMATCH[1]}"
 # A spec is a FOLDER: specs/SPEC-N-name/ with a canonical spec.md (+ tech-design.md, implementation.md,
-# attachments). Resolve the folder (main tree only — this check has never covered backlog), then its
-# spec.md. The trailing '-' in the glob stops SPEC-2 from matching SPEC-20. Keep this in sync with the
-# canonical-path regex in check-spec-version.sh.
+# attachments). Resolve the folder main-tree first, then backlog (preserves "main before backlog"),
+# then its spec.md. The trailing '-' in the glob stops SPEC-2 from matching SPEC-20. Keep this in sync
+# with check-status-sync.sh's resolver and check-spec-version.sh's canonical-path regex — a backlogged
+# spec is status- and version-gated, so it must be AC-gated too.
 specdir=$(ls -d "$dir"/specs/"${id}"-*/ 2>/dev/null | head -1)
+[[ -n "$specdir" ]] || specdir=$(ls -d "$dir"/specs/backlog/"${id}"-*/ 2>/dev/null | head -1)
 file="${specdir}spec.md"
 [[ -n "$specdir" && -f "$file" ]] || exit 0
 # Deprecated (abandoned) spec: its feature no longer exists, so unticked ACs are expected — skip.

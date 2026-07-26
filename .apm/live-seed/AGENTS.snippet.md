@@ -10,7 +10,7 @@ tuning goes in `spec-workflow.supplemental.md`.
 Key locations:
 - `specs/` — spec folders (`SPEC-N-name/`, each with `spec.md` + `tech-design.md` +
   `implementation.md` + any attachments) and `specs/INDEX.md` (the status source of truth).
-- `docs/context-map.md` — where this project's governing context lives (architecture, security,
+- `.spec-workflow/context-map.md` — where this project's governing context lives (architecture, security,
   business, ADRs, UX). Repo files by default, but each row may point at an external tool (Confluence,
   Notion) or an MCP context provider; the commands consult it to locate context.
 - `docs/PRD.md` — product requirements (default `business` source). `docs/SECURITY-RULES.md` — default

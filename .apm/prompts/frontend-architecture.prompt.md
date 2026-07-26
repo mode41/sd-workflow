@@ -19,17 +19,17 @@ optional **design profile**. It never assumes a particular framework, state libr
 The exact paths and tools depend on the project's frontend stack; discover them, then read what's relevant.
 
 1. **Stack & dependencies:** Read the frontend manifest (`package.json` or equivalent)
-2. **Design profile (the seam):** Read `docs/design-profile.md` if it exists — a capability bundle or
+2. **Design profile (the extension point):** Read `.spec-workflow/profiles/design.md` if it exists — a capability bundle or
    your own design-init tool declares the visual language, tokens, and component conventions there.
    Honor its `profile-schema:` front-matter — this core supports `1`, and on an unsupported value note
    `profile schema N unsupported` and run on discovery alone.
    **If no design profile exists and the project has no discoverable frontend**, say so
    ("no design profile installed and no frontend detected — this project may not need frontend
-   architecture; add `docs/design-profile.md` to enforce a design system") and stop. If there IS a
+   architecture; add `.spec-workflow/profiles/design.md` to enforce a design system") and stop. If there IS a
    frontend but no profile, proceed with the stack-neutral reasoning below, but do **not** invent
    design-system rules the project hasn't established — flag that design conformance is unenforced
    until a profile is added.
-3. **Architecture & UX context (the context-map seam):** consult `docs/context-map.md` if it exists to
+3. **Architecture & UX context (the context-map extension point):** consult `.spec-workflow/context-map.md` if it exists to
    locate architectural constraints (`kind=architecture`, default `ARCHITECTURE.md`) and any UX
    guidelines (`kind=ux`). For each, query a listed MCP context provider if its tool is connected, else
    read the listed source, else discover from the codebase. Honor its `context-schema:` front-matter —
@@ -131,7 +131,7 @@ Apply well-established UX conventions (the kind top-tier products use):
 
 - All colors must use the project's theme tokens — never hardcoded values
 - Typography, spacing, borders, and component styles must follow the **design profile** if present
-  (`docs/design-profile.md`); otherwise follow the visual patterns already established in the code
+  (`.spec-workflow/profiles/design.md`); otherwise follow the visual patterns already established in the code
 - Identify existing visual patterns by reading current components and apply them consistently
 
 ## Phase 4: Design the Change
@@ -183,7 +183,7 @@ Once the design is approved:
 - **No premature abstractions.** Three similar lines of code is better than a generic wrapper nobody asked for.
 - **No inline styles or hardcoded values.** Use the project's design tokens and styling system.
 - **No catch-all files.** No `utils`, `helpers`, `types` dumping grounds.
-- **The design profile is law** — every visual decision must conform to `docs/design-profile.md` when
+- **The design profile is law** — every visual decision must conform to `.spec-workflow/profiles/design.md` when
   it exists; when it doesn't, conform to the established patterns and flag that a profile is needed.
 - **Push back on inconsistency.** If a change would introduce a pattern that conflicts with existing code, flag it.
 

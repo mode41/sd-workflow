@@ -35,7 +35,7 @@ _Describe what you are building and why in 2-3 sentences. What is the core probl
 
 ---
 
-**Governing context:** see [`docs/context-map.md`](context-map.md) for where this project's
+**Governing context:** see `.spec-workflow/context-map.md` for where this project's
 architecture, security, and other context lives (repo files by default — e.g. `ARCHITECTURE.md` — or
 an external tool / MCP provider).
 

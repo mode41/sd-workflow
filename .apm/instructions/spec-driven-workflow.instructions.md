@@ -27,9 +27,11 @@ commit from any tool or human; bypass with `git commit --no-verify`).
 
 When implementing a spec, always read these files first:
 - The spec folder `specs/SPEC-X-*/`: `spec.md` (the contract) and `tech-design.md` (the HOW)
-- `docs/context-map.md` to locate the architecture & security sources (`kind=architecture` /
+- `.spec-workflow/context-map.md` to locate the architecture & security sources (`kind=architecture` /
   `kind=security`): query a connected provider, else read the listed file, else discover from the
-  codebase — defaults to `ARCHITECTURE.md` and `docs/SECURITY-RULES.md`
+  codebase — defaults to `ARCHITECTURE.md` and `docs/SECURITY-RULES.md`. Honor its `context-schema:`
+  front-matter — this core supports `1`; on an unsupported value note `context schema N unsupported`
+  and run on discovery alone
 - `specs/INDEX.md` for dependency order
 
 Never start implementing a spec that has no `tech-design.md`. Run `/technical-design SPEC-X` first.
@@ -43,9 +45,10 @@ This rule covers the workflow only. Deployed alongside it, in the same rules dir
 - **testing** — universal testing rules (step 5 produces the evidence; these rules govern how).
 - **code-hygiene** — what "done" means for a change: no zombie code, docs and the architecture source kept true.
 - **engineering-practices** — discovery before assumption, KISS/DRY/YAGNI, what not to introduce.
-- **security** — when you touch `.env*` or `**/api/**`, injects the security rules located via `docs/context-map.md` (`kind=security`; defaults to `docs/SECURITY-RULES.md`).
+- **security** — when you touch `.env*` or `**/api/**`, injects the security rules located via `.spec-workflow/context-map.md` (`kind=security`; defaults to `docs/SECURITY-RULES.md`).
 
-The workflow is stack- and design-agnostic. Optional stack/design profiles, and the **context map**
-(`docs/context-map.md`) that says where your governing context lives (architecture, security, business,
-ADRs, UX — repo files or external tools/providers), are extension seams the commands consult when
-present — see `docs/extending-with-bundles.md`.
+The workflow is stack- and design-agnostic. Optional stack/design profiles
+(`.spec-workflow/profiles/`), and the **context map** (`.spec-workflow/context-map.md`) that says where
+your governing context lives (architecture, security, business, ADRs, UX — repo files or external
+tools/providers), are extension points the commands consult when present. Full contract:
+<https://github.com/nodeline/spec-driven-workflow/blob/main/docs/extending-with-bundles.md>

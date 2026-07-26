@@ -19,8 +19,14 @@
 Each spec carries a `**Version:**` (`v1`, `v2`, …) and an inline `## Changelog` — the **source of
 truth** for how it evolved. Once a spec is Planned or later, any substantive change (or a
 deprecation) must bump the version + add a changelog row naming the driving `SPEC-N`. The `Version`
-column below is a convenience mirror the skills keep updated; it is **not** hook-enforced (only the
-spec's own header + changelog are).
+column below is a convenience mirror the workflow commands keep updated; it is **not** hook-enforced
+(only the spec's own header + changelog are).
+
+## Backlog
+
+A spec may live under `specs/backlog/SPEC-N-name/` instead of `specs/SPEC-N-name/` while it is parked.
+The enforcement checks resolve the main tree first, then backlog, so a backlogged spec is held to the
+same status, version and acceptance-criteria rules as any other.
 
 ## Specs
 
