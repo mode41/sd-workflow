@@ -33,6 +33,23 @@ _Describe what you are building and why in 2-3 sentences. What is the core probl
 - _What this product explicitly does NOT do_
 - _Important to set boundaries: features that look adjacent but are out of scope_
 
+## Open Questions
+<!-- Project-level decisions nobody has settled. `/requirements` records them here — instead of
+     asking the terminal — when `interaction.mode` is "file" in .spec-workflow/config.json, noting
+     what it ASSUMED and built the PRD on; you fill in **Answer:** (your choice, or "confirmed").
+     These are the widest-blast-radius questions there are ("is a backend needed?"), so while one is
+     unanswered NO spec may advance past 🔵 In Planning — check-open-questions.sh enforces it.
+     Answered questions STAY here as the decision record.
+     Delete this section if there is nothing open.
+
+### Q-1: _The decision, as a question_
+- (a) _Option — trade-off_
+- (b) _Option — trade-off_
+**Assumed:** _(b), because …_
+**Answer:**
+-->
+_None._
+
 ---
 
 **Governing context:** see `.spec-workflow/context-map.md` for where this project's

@@ -1,6 +1,9 @@
 {
   "$schema": "./config.schema.json",
-  "schemaVersion": 1,
+  "schemaVersion": 2,
+  "interaction": {
+    "mode": "ask"
+  },
   "agents": {},
   "retiredAgents": {}
 }

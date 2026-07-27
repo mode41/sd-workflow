@@ -5,7 +5,7 @@
 # and deploys the shared primitives only to those. A consumer may pin `targets:` or use
 # `--target` if they want to override auto-detection.
 name: spec-driven-workflow
-version: 0.3.0
+version: 0.4.0
 description: >-
   Agent-agnostic Spec-Driven Development workflow — spec lifecycle, versioning,
   reviewer agents, security rules, and self-enforcing git + per-harness hooks.

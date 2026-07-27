@@ -15,9 +15,11 @@ and makes its evolution traceable inline. The rules:
   `tech-design.md` must bump `**Version:**` and add a `## Changelog` row — both live in `spec.md`, so
   a change to `tech-design.md` is still recorded by bumping `spec.md`. Substantive = changes to
   overview, user stories, acceptance-criteria *text*, edge cases, or tech-design contracts. **Not**
-  version-gated (no bump): advancing status, editing the changelog, ticking ACs, `implementation.md`
-  (close-out evidence), and attachments (`mockups/`, `source/`, …) — so the normal implement → verify
-  → close-out flow needs no bumps.
+  version-gated (no bump): advancing status, editing the changelog, editing `## Open Questions`
+  (raising or answering a question is bookkeeping — but whatever the answer then *changes* in the
+  contract or design is substantive, so cite the `Q-N` in that changelog row), ticking ACs,
+  `implementation.md` (close-out evidence), and attachments (`mockups/`, `source/`, …) — so the normal
+  implement → verify → close-out flow needs no bumps.
 - The **Driver** column names *why*: the `SPEC-N` whose work drove the change (especially when
   another spec's design/implementation forced this one to change), or `self` for an in-spec
   revision, or `—` for the initial row.

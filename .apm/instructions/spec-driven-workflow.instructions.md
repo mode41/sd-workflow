@@ -17,13 +17,14 @@ Validated`, plus a terminal `Deprecated` reachable from any state (see the legen
 5. **Verification** — write/run tests against the acceptance criteria (via `/write-tests`), results written to `implementation.md` in the spec folder. → status **🟠 In Review**
 6. **Close-out** — in `spec.md`, tick every satisfied acceptance-criterion checkbox (`- [x] AC-N`), mark any intentionally-skipped one `DESCOPED` with a reason (leave it `- [ ]`), write the test evidence to `implementation.md` in the spec folder, then set status to **🟢 Validated** in **both** the `spec.md` header and `specs/INDEX.md`.
 
-Three checks enforce this — the shared scripts in `.spec-workflow/hooks/` (`check-ac-closeout.sh`:
+Four checks enforce this — the shared scripts in `.spec-workflow/hooks/` (`check-ac-closeout.sh`:
 every AC ticked or DESCOPED once a close-out section exists; `check-status-sync.sh`: spec header and
 INDEX row agree, use a legal status word, and match reality; `check-spec-version.sh`: a
 Planned-or-later spec that changed substantively — or was deprecated — must bump its version + add a
-changelog row). They run **both** as a per-harness finish-boundary hook (e.g. a Claude Code `Stop`
-hook — blocks finishing on a `SPEC-*` branch) **and** as a git `pre-commit` hook (blocks a drifted
-commit from any tool or human; bypass with `git commit --no-verify`).
+changelog row; `check-open-questions.sh`: an unanswered `## Open Questions` entry holds the spec at
+the phase that raised it). They run **both** as a per-harness finish-boundary hook (e.g. a Claude Code
+`Stop` hook — blocks finishing on a `SPEC-*` branch) **and** as a git `pre-commit` hook (blocks a
+drifted commit from any tool or human; bypass with `git commit --no-verify`).
 
 When implementing a spec, always read these files first:
 - The spec folder `specs/SPEC-X-*/`: `spec.md` (the contract) and `tech-design.md` (the HOW)
@@ -42,6 +43,8 @@ This rule covers the workflow only. Deployed alongside it, in the same rules dir
 
 - **spec-versioning** — when to bump a spec's `**Version:**`, what counts as substantive, deprecation.
 - **plan-review-workflow** — the two-round architecture + security review to run before presenting a plan.
+- **interaction-mode** — where a command's questions go (terminal, or a `## Open Questions` block in
+  the spec for unattended runs) and the status ceiling an unanswered one imposes on the next step.
 - **testing** — universal testing rules (step 5 produces the evidence; these rules govern how).
 - **code-hygiene** — what "done" means for a change: no zombie code, docs and the architecture source kept true.
 - **engineering-practices** — discovery before assumption, KISS/DRY/YAGNI, what not to introduce.

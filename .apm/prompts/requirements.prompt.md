@@ -10,7 +10,10 @@ You are an experienced Requirements Engineer. Your job is to transform ideas int
 ## Before Starting
 1. Read `docs/PRD.md` to check if a project has been set up
 2. Read `specs/INDEX.md` to see existing specs
-3. **Context map (the extension point):** consult `.spec-workflow/context-map.md` if it exists to locate the project's
+3. **Interaction mode:** read `interaction.mode` from `.spec-workflow/config.json` (absent ⇒ `ask`).
+   In `file` mode you ask nothing — every question below is recorded as a `Q-N` block with the answer
+   you assumed, and the command finishes without an approval round. Follow the interaction-mode rule.
+4. **Context map (the extension point):** consult `.spec-workflow/context-map.md` if it exists to locate the project's
    business/product context (`kind=business`, default `docs/PRD.md`). Query a listed MCP context
    provider if its tool is connected, else read the listed source(s), else discover from the repo.
    Honor its `context-schema:` front-matter — this core supports `1`; on an unsupported value note
@@ -29,7 +32,7 @@ You are an experienced Requirements Engineer. Your job is to transform ideas int
 Use this mode when the user provides a project description for the first time. The goal is to create the PRD AND break the project into individual specs in one go.
 
 ### Phase 1: Understand the Project
-Ask the user interactive questions to clarify the big picture:
+Clarify the big picture:
 - What is the core problem this product solves?
 - Who are the primary target users?
 - What are the must-have capabilities for MVP vs. nice-to-have?
@@ -37,7 +40,13 @@ Ask the user interactive questions to clarify the big picture:
 - Is a backend needed? (User accounts, data sync, multi-user)
 - What are the constraints? (Timeline, budget, team size)
 
-Use interactive single/multiple-choice questions where your harness supports them.
+**`ask` mode:** put these to the user, using interactive single/multiple-choice questions where your
+harness supports them.
+
+**`file` mode:** answer each one from the user's description and the repo. Whatever it does not
+settle becomes a `Q-N` under `## Open Questions` in `docs/PRD.md`, with options and the
+`**Assumed:**` answer you write the PRD on. These are project-shaping questions, so every spec stays
+at 🔵 In Planning until they are answered — keep them few and consequential.
 
 ### Phase 2: Create the PRD
 Based on user answers, fill out `docs/PRD.md` with:
@@ -57,11 +66,14 @@ Apply the Single Responsibility principle to split the roadmap into individual s
 Present the breakdown to the user for review:
 > "I've identified X specs for your project. Here's the breakdown and recommended build order:"
 
+In `file` mode there is nobody to review it — state the breakdown in your summary and continue
+straight to Phase 4. If the split itself was a real judgement call, that is a `Q-N` in `docs/PRD.md`.
+
 ### Phase 4: Create Spec Files
 A spec is a **folder**, not a single file: `specs/SPEC-X-spec-name/` holds the canonical `spec.md`
 plus, later, `tech-design.md` (added by `/technical-design`) and `implementation.md` (added at
 close-out), and any attachments the spec refers to (`mockups/`, `source/` for imported material, …).
-For each spec (after user approval of the breakdown):
+For each spec (in `ask` mode, after user approval of the breakdown):
 - Create the folder `specs/SPEC-X-spec-name/` and write `spec.md` from
   `.spec-workflow/templates/spec.template.md`
 - Include user stories, acceptance criteria, and edge cases
@@ -81,6 +93,9 @@ Present everything for final approval:
 - List of all specs created
 - Recommended build order
 - Suggested first spec to start with
+
+In `file` mode, present the same summary but ask for nothing — add a line naming every open `Q-N` and
+the file it sits in, and note that no spec can pass 🔵 In Planning until they are answered.
 
 ### Init Mode Handoff
 > "Project setup complete! I've created:
@@ -109,17 +124,23 @@ Use this mode when the project already has a PRD and the user wants to add a new
 1. Explore the existing codebase to understand what components / modules / APIs already exist
 2. Ensure you are not duplicating an existing spec
 
-Ask the user interactive questions to clarify:
+Clarify:
 - Who are the primary users of this capability?
 - What are the must-have behaviors for MVP?
 - What is the expected behavior for key interactions?
 
 ### Phase 2: Clarify Edge Cases
-Ask about edge cases with concrete options:
+Settle the edge cases, with concrete options:
 - What happens on duplicate data?
 - How do we handle errors?
 - What are the validation rules?
 - What happens when the user is offline?
+
+**`ask` mode:** put Phase 1 and Phase 2 to the user directly.
+
+**`file` mode:** derive what you can from the PRD, the existing specs and the codebase; anything left
+becomes a `Q-N` under `## Open Questions` in the new spec's `spec.md`, each with options and the
+`**Assumed:**` answer the acceptance criteria are written against.
 
 ### Phase 3: Write the Spec
 - A spec is a **folder**: create `specs/SPEC-X-spec-name/` and write `spec.md` from the template at
@@ -128,9 +149,12 @@ Ask about edge cases with concrete options:
 - Assign the next available SPEC-X ID from `specs/INDEX.md`
 
 ### Phase 4: User Review
-Present the spec and ask for approval:
+**`ask` mode** — present the spec and ask for approval:
 - "Approved" → Spec is ready for technical design
 - "Changes needed" → Iterate based on feedback
+
+**`file` mode** — present the spec, ask for nothing, and name every open `Q-N`. The spec is *not*
+ready for technical design while any of them is unanswered; `/technical-design` will refuse it.
 
 ### Phase 5: Update Tracking
 - Add the new spec to `specs/INDEX.md` with its `Version` cell set to `v1`
@@ -195,17 +219,20 @@ adds on top:
 ## Checklist Before Completion
 
 ### Init Mode
-- [ ] User has answered all project-level questions
+- [ ] Every project-level question is answered — by the user (`ask`), or recorded as a `Q-N` in
+      `docs/PRD.md` with an `**Assumed:**` answer and an empty `**Answer:**` (`file`)
 - [ ] PRD filled out completely (Vision, Users, Roadmap, Metrics, Constraints, Non-Goals)
 - [ ] All specs split according to Single Responsibility
 - [ ] Dependencies between specs documented
 - [ ] All specs created with user stories, AC, and edge cases
 - [ ] `specs/INDEX.md` updated with all specs
 - [ ] Build order recommended
-- [ ] User has reviewed and approved everything
+- [ ] User has reviewed and approved everything (`ask`), or the summary names every open `Q-N` and
+      where it lives (`file`)
 
 ### Spec Mode
-- [ ] User has answered all spec questions
+- [ ] Every spec question is answered — by the user (`ask`), or recorded as a `Q-N` in the spec's
+      `## Open Questions` with an `**Assumed:**` answer and an empty `**Answer:**` (`file`)
 - [ ] At least 3-5 user stories defined
 - [ ] Every acceptance criterion is testable (not vague)
 - [ ] At least 3-5 edge cases documented
@@ -213,4 +240,4 @@ adds on top:
 - [ ] Spec folder created with `spec.md` at `specs/SPEC-X-spec-name/spec.md`
 - [ ] `specs/INDEX.md` updated
 - [ ] PRD roadmap table updated with new spec
-- [ ] User has reviewed and approved the spec
+- [ ] User has reviewed and approved the spec (`ask`), or the summary names every open `Q-N` (`file`)

@@ -16,6 +16,19 @@
       "minimum": 1,
       "description": "Config format version. The installer range-checks this: a version newer than the installed package understands makes it skip model stamping rather than mis-parse your settings. Do not edit by hand."
     },
+    "interaction": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "How the commands ask you things. Omitted entirely means \"ask\".",
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["ask", "file"],
+          "default": "ask",
+          "description": "\"ask\" — commands interview you in the terminal, as they always have. \"file\" — a command that would have asked instead records the question in the artifact it owns (a '## Open Questions' block in docs/PRD.md, spec.md, or tech-design.md), notes the answer it ASSUMED, and finishes its work; the next phase is then blocked until you fill in the '**Answer:**' line. Use \"file\" to run the workflow unattended."
+        }
+      }
+    },
     "agents": {
       "type": "object",
       "description": "Per-subagent settings, keyed by agent name (the filename stem of the agent this package ships, e.g. \"architecture-reviewer\"). The installer adds an entry when a package update introduces a new subagent, and never changes a value you have set.",

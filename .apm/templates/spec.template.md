@@ -56,3 +56,21 @@ _One paragraph describing what this spec delivers and why it matters._
 
 ## Out of Scope
 _What this spec explicitly does NOT cover._
+
+## Open Questions
+<!-- Decisions this spec could not settle on its own. A command running with
+     `interaction.mode: "file"` records them here instead of asking the terminal, notes what it
+     ASSUMED and built on, and carries on; you fill in **Answer:** (your choice, or "confirmed").
+     An empty **Answer:** holds this spec at 🔵 In Planning — check-open-questions.sh blocks the
+     advance to 🟣 Planned until it is filled in. Answered questions STAY here: this is the
+     decision record. Editing this section is NOT a substantive change (no version bump); what an
+     answer then changes in the contract is — cite the Q-N in the changelog row.
+     Delete this section if the spec has no open questions.
+
+### Q-1: _The decision, as a question_
+- (a) _Option — trade-off_
+- (b) _Option — trade-off_
+**Assumed:** _(b), because …_
+**Answer:**
+-->
+_None._
