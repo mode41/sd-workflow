@@ -6,9 +6,10 @@
 # bump + changelog row. A spec is a FOLDER (specs/SPEC-N-name/): spec.md + tech-design.md gate;
 # implementation.md (close-out evidence) and any attachments (mockups/, source/, …) are NOT gated.
 # NON-substantive edits never trigger it: the Status / Last Updated / Version / Designed header lines,
-# the whole '## Changelog' section, and acceptance-criterion checkbox ticking ([ ] <-> [x]) are all
-# exempt — so the normal requirements -> design -> implement -> verify -> close-out journey runs
-# untouched. A commit touching both spec.md and tech-design.md needs only ONE bump (grouped per folder).
+# the whole '## Changelog' and '## Open Questions' sections, and acceptance-criterion checkbox ticking
+# ([ ] <-> [x]) are all exempt — so the normal requirements -> design -> implement -> verify ->
+# close-out journey runs untouched. (Raising or answering a question is bookkeeping; whatever the
+# answer then CHANGES in the contract or design is substantive and still demands a bump.) A commit touching both spec.md and tech-design.md needs only ONE bump (grouped per folder).
 #
 # Validate-only (it never edits): the stderr message tells the agent to bump spec.md + add a changelog
 # row, citing the driving SPEC-N. Silent (exit 0) when: not a git repo, no gated doc changed vs HEAD,
@@ -34,6 +35,7 @@ version_of() { grep -m1 '^\*\*Version:\*\*' | grep -oE 'v[0-9]+' | head -1; }
 normalize() {
   awk '
     /^## Changelog/       { skip=1; next }   # drop the whole Changelog section (spec.md) ...
+    /^## Open Questions/  { skip=1; next }   # ... and the Q&A ledger (both files) ...
     /^## /                { skip=0 }         # ... until the next top-level heading.
     skip                  { next }
     /^\*\*Status:\*\*/       { next }

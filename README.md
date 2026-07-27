@@ -49,8 +49,10 @@ showing the status header, changelog, ticked acceptance criteria, a descoped one
   what not to introduce), `code-hygiene` (no zombie code; docs and your architecture source kept true), and
   `testing` (universal, stack-agnostic testing law). These are the rules you would otherwise hand-write
   into `CLAUDE.md` / `AGENTS.md`; here they ship as managed rules that refresh on `apm update`.
-- **Self-enforcing checks** — spec status, acceptance-criteria close-out, and spec versioning are
-  enforced two ways (see *Enforcement* below).
+- **Self-enforcing checks** — spec status, acceptance-criteria close-out, spec versioning, and
+  unanswered questions are enforced two ways (see *Enforcement* below).
+- **An unattended mode** — the commands can write their questions into the spec instead of asking the
+  terminal, and the next phase stays locked until you answer. See *Running unattended*.
 
 What it deliberately does **not** contain: language/framework/design specifics (those live in
 optional bundles, discovered through a frozen profile extension point), or any hardcoded assumption
@@ -172,7 +174,8 @@ spec-workflow.supplemental.md  # your workflow tuning, seeded once, never overwr
 
 ## Enforcement — what runs where
 
-The three checks (`check-ac-closeout`, `check-status-sync`, `check-spec-version`) run on two layers:
+The four checks (`check-ac-closeout`, `check-status-sync`, `check-spec-version`,
+`check-open-questions`) run on two layers:
 
 - **git pre-commit — the agent-agnostic floor.** Works for any agent (or none), because it's git,
   not an agent feature. This is the guaranteed layer.
@@ -182,7 +185,7 @@ The three checks (`check-ac-closeout`, `check-status-sync`, `check-spec-version`
 
 Both layers run whatever `check-*.sh` the installer deployed — there is no list to keep in sync, and a
 check a newer version drops is pruned rather than left behind. A spec parked under
-`specs/backlog/SPEC-N-name/` is held to all three checks, exactly like one in the main tree.
+`specs/backlog/SPEC-N-name/` is held to all four checks, exactly like one in the main tree.
 
 Known, accepted asymmetries — documented, not hidden:
 
@@ -196,6 +199,50 @@ Known, accepted asymmetries — documented, not hidden:
   to chain the spec-workflow checks from your existing hook. Opt out permanently with
   `touch .spec-workflow/.no-git-hooks`.
 
+## Running unattended
+
+`/requirements` and `/technical-design` are written to interview you, which is useless when nobody is
+at the terminal. Flip one key in `.spec-workflow/config.json`:
+
+```json
+{ "interaction": { "mode": "file" } }
+```
+
+Now a command that would have asked instead **writes the question into the file it owns**, records the
+answer it assumed, and keeps going — so an unattended run finishes with a real PRD, real specs, and a
+written list of everything it had to decide for you:
+
+```markdown
+## Open Questions
+
+### Q-1: Which compression codec is the default?
+- (a) snappy — faster writes, ~30% larger files
+- (b) zstd — ~2× slower, ~50% smaller
+**Assumed:** (b) zstd — AC-2 prioritises storage cost over write latency.
+**Answer:**
+```
+
+You answer by filling in `**Answer:**` — your choice, or `confirmed` to accept the assumption.
+
+**Nothing built on a guess can move forward.** An empty `**Answer:**` is a ceiling on the spec's
+status, enforced by `check-open-questions.sh` at the same two layers as every other check:
+
+| An unanswered question in | holds the spec at |
+|---|---|
+| `docs/PRD.md` | 🔵 In Planning — for **every** spec, since project-level questions invalidate anything beneath them |
+| `specs/SPEC-N-*/spec.md` | 🔵 In Planning — so `/technical-design` refuses the spec |
+| `specs/SPEC-N-*/tech-design.md` | 🟣 Planned — so implementation cannot start |
+
+Two details worth knowing:
+
+- **The ledger is not a queue.** Answered questions stay in the file, so `## Open Questions` becomes
+  the record of *why* a decision went the way it did — the one thing the format previously threw away.
+  Editing it never demands a version bump; whatever the answer then *changes* in the contract does.
+- **It works in `ask` mode too.** The check does not care how a question got there, so you can park a
+  spec by hand by dropping a `Q-N` into it. Unresolved critical findings from the plan-review pipeline
+  land here as well, which means "accept this risk" has to be written down by a human rather than
+  agreed to in a chat window that nobody keeps.
+
 ## Choosing models for the reviewer agents
 
 `.spec-workflow/config.json` decides which model each reviewer subagent runs on:
@@ -203,7 +250,8 @@ Known, accepted asymmetries — documented, not hidden:
 ```json
 {
   "$schema": "./config.schema.json",
-  "schemaVersion": 1,
+  "schemaVersion": 2,
+  "interaction": { "mode": "ask" },
   "agents": {
     "architecture-reviewer": { "model": { "default": "opus" } },
     "security-reviewer":     { "model": { "claude": "sonnet", "opencode": "ollama/qwen2.5-coder" } }
@@ -231,7 +279,11 @@ than in the agent files themselves.
 
 Your settings survive package updates: when a new version adds a reviewer agent, its entry is added
 (and prompted for) with your existing values untouched; when one is dropped, its entry moves to
-`retiredAgents` rather than being deleted, and is restored if the agent ever returns.
+`retiredAgents` rather than being deleted, and is restored if the agent ever returns. When a new
+version changes the config *format*, the setup script migrates `schemaVersion` forward additively —
+new keys get their defaults, nothing you set is touched. Going the other way, a config newer than the
+installed package makes it skip model stamping and tell you to update, rather than mis-parse your
+settings.
 
 ## Security notes (read before first install)
 

@@ -9,8 +9,9 @@
 #      living data.
 #      For an EXISTING AGENTS.md it offers to append the workflow section (or records a manual step).
 #   4. Prints a drift notice for seed-once security rules that diverge from upstream.
-#   5. MERGES the project config forward: adds entries for subagents this version introduces, retires
-#      (never deletes) entries for ones it no longer ships, and prompts for any model left unset.
+#   5. MERGES the project config forward: migrates an older schemaVersion additively, adds entries for
+#      subagents this version introduces, retires (never deletes) entries for ones it no longer ships,
+#      and prompts for any model left unset.
 #   6. Wires git core.hooksPath with DETECT-AND-PRESERVE (never silently steals an existing value).
 #   7. Emits each present harness's native finish hook and stamps each agent's configured model
 #      (delegates to emit-harness-hooks.sh / emit-agent-models.sh).
@@ -154,6 +155,10 @@ config_validate "$CONFIG"; case $? in
   2) CONFIG_OK=0        # schema newer than we understand — leave it alone, skip stamping
      notice_add "config schema in .spec-workflow/config.json is newer than this package understands — upgrade spec-driven-workflow ('apm update'); reviewer models were NOT stamped this run." ;;
 esac
+
+# Bring an older config forward first (additive: new keys get their defaults, set values are kept),
+# so everything below reads a config in this version's shape.
+[ "$CONFIG_OK" -eq 1 ] && config_migrate
 
 shipped=""
 if [ "$CONFIG_OK" -eq 1 ]; then

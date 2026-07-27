@@ -10,7 +10,8 @@
 # NOTE: no associative arrays / bash-4-only syntax — this has to run on macOS's bash 3.2.
 
 # Highest schemaVersion this package understands. Bump only on a breaking format change.
-CONFIG_SCHEMA_VERSION=1
+#   1 -> 2: added the top-level 'interaction' block (interaction.mode: ask|file).
+CONFIG_SCHEMA_VERSION=2
 
 cfg_log() { printf '  [config] %s\n' "$1"; }
 
@@ -72,6 +73,25 @@ config_validate() {
     return 2
   fi
   return 0
+}
+
+# --- migration --------------------------------------------------------------
+# config_migrate — bring an older config up to CONFIG_SCHEMA_VERSION, additively.
+# Only ever ADDS defaults for keys a newer format introduced; never touches a value the user set.
+# Call after config_validate returns 0 (a config newer than us must be left alone, not "migrated").
+# Requires CONFIG to be set. Silent and idempotent when already current.
+config_migrate() {
+  local sv
+  sv=$(jq -r '.schemaVersion // 0' "$CONFIG")
+  [ "$sv" -lt "$CONFIG_SCHEMA_VERSION" ] || return 0
+
+  # 1 -> 2: seed interaction.mode ("ask" = the behaviour every v1 config already had).
+  if [ "$sv" -lt 2 ]; then
+    cfg_write '.interaction = ({"mode": "ask"} + (.interaction // {}))' || return 1
+  fi
+
+  cfg_write --argjson v "$CONFIG_SCHEMA_VERSION" '.schemaVersion = $v' || return 1
+  cfg_log "migrated config schema $sv -> $CONFIG_SCHEMA_VERSION (your settings are unchanged)"
 }
 
 # --- reads ------------------------------------------------------------------

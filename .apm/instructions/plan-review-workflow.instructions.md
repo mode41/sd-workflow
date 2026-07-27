@@ -77,7 +77,7 @@ Run both agents again on the Revised Plan, with full context from Round 1:
 |---|---|
 | Both Round 2 verdicts PASS or PASS WITH CONCERNS, all critical issues resolved | Proceed to Present — clean |
 | PASS WITH CONCERNS remain but no critical issues | Proceed to Present — flag concerns to user |
-| Any Round 2 FAIL, or any Round 1 critical issue unresolved after revision | **Stop — escalate to user before proceeding** |
+| Any Round 2 FAIL, or any Round 1 critical issue unresolved after revision | **Stop — escalate to the user before proceeding** (see below for `interaction.mode: "file"`) |
 
 An issue counts as "resolved" only if the reviewing agent in Round 2 explicitly confirms it. Do not
 self-certify resolution.
@@ -93,3 +93,11 @@ each; and a recommendation (proceed / proceed with caveats / needs further desig
 **If the pipeline has unresolved critical issues:** **Stop.** Present the unresolved issues clearly.
 Do not present the plan as ready. Ask the user how they want to proceed — redesign, accept the risk
 explicitly, or descope the change. Do not bury failures in a long summary; lead with the blocker.
+
+**Under `interaction.mode: "file"`** (see the interaction-mode rule) there is nobody to escalate to,
+and an escalation that evaporates with the conversation is worse than no pipeline at all. Record each
+unresolved critical issue as a `Q-N` under `## Open Questions` in the spec's `tech-design.md` — the
+finding, the reviewer that raised it, and the three options (redesign / accept the risk explicitly /
+descope) — with `**Assumed:** redesign` unless the design already reflects a different call. Still
+lead with the blocker in your summary. This holds the spec at 🟣 Planned, so implementation cannot
+start on an unreviewed risk: the accepting decision has to be written down by a human.

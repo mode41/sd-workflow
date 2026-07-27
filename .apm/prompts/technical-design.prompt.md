@@ -15,8 +15,17 @@ You are an experienced Solution and Software Architect. Your job is to transform
 4. Read the current data model / DB schema (location depends on stack — discover from the codebase)
 5. Consult `.spec-workflow/profiles/stack.md` if it exists (a bundle/stack-init tool may provide stack conventions); honor its `profile-schema:` front-matter — this core supports `1`, and on an unsupported value note `profile schema N unsupported` and run on discovery alone. If it is absent, discover conventions from the codebase
 6. Check `tech-design.md` in other spec folders to ensure consistency
+7. **Interaction mode:** read `interaction.mode` from `.spec-workflow/config.json` (absent ⇒ `ask`).
+   In `file` mode you ask nothing — Phase 4's questions are recorded instead. Follow the
+   interaction-mode rule.
 
 If the spec doesn't exist or has no acceptance criteria, stop and tell the user to run `/requirements` first.
+
+**Stop if the previous phase is still undecided.** If the spec's `spec.md` — or `docs/PRD.md` — has a
+`## Open Questions` entry with an empty `**Answer:**`, do not design and do not advance the status.
+Name the blocking `Q-N` and its file, and say that answering it (or `confirmed` to accept the
+`**Assumed:**` value) unblocks this command. Designing on an undecided contract is exactly what
+`check-open-questions.sh` will refuse to let you finish or commit.
 
 ---
 
@@ -91,12 +100,16 @@ Before presenting, check the design against:
 
 If any AC or edge case is NOT covered by the design, add it explicitly or flag it as a gap.
 
-## Phase 4: Ask Clarifying Questions
+## Phase 4: Clarifying Questions
 
 If the design requires decisions not covered by the spec or architecture:
 - Present the options with trade-offs
-- Ask with concrete choices
-- Do not guess — ask
+- **`ask` mode:** ask with concrete choices. Do not guess — ask.
+- **`file` mode:** record each one as a `Q-N` under `## Open Questions` in `tech-design.md`, with the
+  options and the `**Assumed:**` answer the design is built on. Do not guess *silently* — a decision
+  you made for the user is a question, and it belongs in that block.
+
+Design questions hold the spec at 🟣 Planned, so implementation cannot start until they are answered.
 
 ## Phase 5: Write the Tech Design
 
@@ -121,7 +134,9 @@ a sibling of `spec.md`:
 ### Security Considerations
 ...
 
-### Open Questions
+## Open Questions
+<!-- `##`, not `###`, even though the sections above are `###`: check-spec-version.sh exempts this
+     section from the version-bump rule by `##` boundary and cannot see a `###` one. -->
 ...
 ```
 
@@ -134,6 +149,10 @@ Once `tech-design.md` is written and approved, advance the status: set it to
 **🟣 Planned** in **both** the spec header (`spec.md`'s `**Status:**` line) and the spec's
 `specs/INDEX.md` row (they must match). `Planned` means "design done, ready to build" —
 before this step the spec was `In Planning`.
+
+Advance it only if `spec.md` and `docs/PRD.md` have no unanswered question left — that is the gate
+you checked in Before Starting, and it is enforced at the finish boundary. Your *own* new questions
+in `tech-design.md` do not block reaching `Planned`; they block leaving it.
 
 If the design introduces new DB tables:
 - Create the migration file in the location the project uses (discover the convention from existing migrations)
@@ -159,7 +178,8 @@ Present a summary:
 - New DB tables/columns introduced
 - New API endpoints
 - Key design decisions and trade-offs
-- Any open questions
+- Any open questions — in `file` mode, name each `Q-N` and say that implementation is blocked until
+  they are answered in `tech-design.md`
 
 > "Tech design is ready for SPEC-X. Review the design in `specs/SPEC-X-*/tech-design.md`."
 > "Next step: Implement the spec."
@@ -181,7 +201,9 @@ Present a summary:
 - [ ] Security invariants are respected
 - [ ] Migration file created (if new tables)
 - [ ] Dependencies on other specs are compatible with their designs
-- [ ] User has reviewed and approved the design
+- [ ] `spec.md` / `docs/PRD.md` had no unanswered question when the status was advanced
+- [ ] User has reviewed and approved the design (`ask`), or every decision made for the user is a
+      `Q-N` in `tech-design.md` with an `**Assumed:**` answer and an empty `**Answer:**` (`file`)
 - [ ] Status advanced to **Planned** in both the spec header and the `specs/INDEX.md` row
 - [ ] Any **other Planned+ spec** whose contract this design changes has been version-bumped +
       changelog'd (Driver = this SPEC), or deprecated if fully obsoleted

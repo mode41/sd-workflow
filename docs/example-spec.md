@@ -45,7 +45,7 @@ without it the reader has nowhere to write.
 | Version | Date | Change | Driver |
 |---------|------|--------|--------|
 | v1 | 2026-03-02 | Initial spec | — |
-| v2 | 2026-03-09 | Writer contract takes a compression codec; added AC-3 | SPEC-4 |
+| v2 | 2026-03-09 | Writer contract takes a compression codec; added AC-3 (answers Q-1) | SPEC-4 |
 | v3 | 2026-03-14 | AC-5 descoped — row-group sizing moved to its own spec | SPEC-6 |
 
 ## Dependencies
@@ -86,6 +86,15 @@ against write speed.
 
 ## Out of Scope
 Reading Parquet, partitioned output, and writing to object storage. Local file → local file only.
+
+## Open Questions
+
+### Q-1: Which compression codec should be the default?
+- (a) `none` — fastest, largest files
+- (b) `snappy` — fast, ~40% smaller
+- (c) `zstd` — ~2× slower to write, ~55% smaller
+**Assumed:** (b) `snappy` — it is what every warehouse reader supports without extra configuration.
+**Answer:** (b) snappy. zstd stays available via the flag; revisit when cold-storage cost matters.
 ````
 
 ---
@@ -94,7 +103,8 @@ Reading Parquet, partitioned output, and writing to object storage. Local file �
 
 The HOW, its own file beside `spec.md`. Adding it the first time flips the spec `🔵 In Planning →
 🟣 Planned` with no version bump; editing it *after* Planned is a substantive change that bumps
-`spec.md`'s version.
+`spec.md`'s version. (Its sections are `###`, but `## Open Questions` is deliberately `##` — the
+version check exempts that section by `##` boundary and cannot see a `###` one.)
 
 ````markdown
 # SPEC-2: Parquet Writer — Tech Design
@@ -118,8 +128,13 @@ buffer and never touches the filesystem.
 The output path is caller-supplied: resolve it to its canonical form and refuse to follow a symlink
 that escapes the working directory. No network access and no credentials are involved.
 
-### Open Questions
-None remaining — the row-group sizing question was resolved by descoping AC-5 into SPEC-6.
+## Open Questions
+
+### Q-1: Should row-group size be tunable in this spec?
+- (a) Add `--row-group-size` here
+- (b) Ship the library default and split the tuning work out
+**Assumed:** (a) — AC-5 asked for it.
+**Answer:** (b). Profiling showed the default is right below 2 GB; AC-5 descoped into SPEC-6.
 ````
 
 ---
@@ -180,6 +195,15 @@ forced the change — `SPEC-4` widened the writer contract, `SPEC-6` took over r
 `check-spec-version.sh` enforces it. Ticking a checkbox, advancing the status, and writing
 `implementation.md` are all explicitly *not* substantive, so the normal implement → verify →
 close-out pass needs no bumps.
+
+**Open questions are a ledger, not a queue.** Both `Q-1` blocks here are *answered* and they stayed in
+the file — that is the point. While `**Answer:**` was empty, `check-open-questions.sh` held the spec
+at `🔵 In Planning` (a `spec.md` question) or `🟣 Planned` (a `tech-design.md` one), so nothing was
+built on an unconfirmed guess; once answered, the block is the record of why the codec is `snappy` and
+why row-group tuning left this spec. Editing the section never demands a version bump — but what the
+answer *changed* did, which is why the `v2` row cites `Q-1`. This is also where a command running
+unattended (`interaction.mode: "file"`) parks everything it had to decide for you, with its
+`**Assumed:**` answer visible; see the README's *Running unattended*.
 
 **Dependencies are declared, not implied.** `Requires: SPEC-1` is what makes the build order in
 `specs/INDEX.md` meaningful, and it's what tells you which other specs to re-check when a contract
