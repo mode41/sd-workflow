@@ -9,13 +9,13 @@ inline changelog, the ticked acceptance criteria, the one deliberately descoped 
 verification evidence that justifies calling it done.
 
 You don't write this by hand. `/requirements` creates the folder and `spec.md`, `/technical-design
-SPEC-2` writes `tech-design.md`, and `/write-tests SPEC-2` plus close-out produce `implementation.md`.
+SPEC-2` writes `tech-design.md`, and `/write-tests SPEC-2` plus close-out produce `audit-trail.md`.
 
 ```
 specs/SPEC-2-parquet-writer/
   spec.md              # the contract — WHAT (written by /requirements)
   tech-design.md       # the HOW (written by /technical-design)
-  implementation.md    # close-out evidence (written at verification/close-out)
+  audit-trail.md       # the verification record (written at verification/close-out)
   # …and any attachments the spec refers to can live here too, e.g.
   #   mockups/         # wireframes, diagrams
   #   source/          # the raw Jira/issue text a spec was distilled from
@@ -139,24 +139,59 @@ that escapes the working directory. No network access and no credentials are inv
 
 ---
 
-## `specs/SPEC-2-parquet-writer/implementation.md`
+## `specs/SPEC-2-parquet-writer/audit-trail.md`
 
-The close-out evidence. Its existence tells the status hook verification has happened; it is **not**
-version-gated, so writing it never demands a bump.
+The verification record. Its existence tells the status hook verification has happened; it is **not**
+version-gated, so writing it never demands a bump. The AC rows are the point of the file — `spec.md`
+says each criterion is met, this says what proves it.
 
 ````markdown
-# SPEC-2: Parquet Writer — Implementation & Verification
+# SPEC-2: Parquet Writer — Audit Trail
 
-Implemented on branch `SPEC-2` (commits `a1c9f02..7d3e118`).
+**Branch:** SPEC-2
+**Commits:** `a1c9f02..7d3e118`
+**Verified:** 2026-03-14
 
-- Unit tests cover AC-1, AC-3 and AC-4, including the invalid-codec and unwritable-path branches.
-- An integration test round-trips a 50k-row fixture through write → read and asserts every column
-  type survives (AC-2). The same fixture family covers EC-1 and EC-3.
-- EC-2 is verified by a test asserting exit 1 with the original file byte-identical, then exit 0
-  with `--force`.
-- Full suite green: 41 tests, 0 failures, run on the branch head.
+## Summary
 
-AC-5 is intentionally unticked and marked DESCOPED in `spec.md`; SPEC-6 carries it.
+Writer built on the reader's schema object rather than re-inferring types, which is the one
+deviation from `tech-design.md` — re-inference lost the reader's empty-column decision (EC-3), so
+the schema is now threaded through instead.
+
+## Acceptance Criteria — evidence
+
+| AC | Evidence | Where |
+|----|----------|-------|
+| AC-1 | Writes a file that `pyarrow.parquet.read_table` opens and reads back row-for-row | `tests/test_writer.py::test_writes_readable_parquet` |
+| AC-2 | 50k-row fixture round-trips write → read; every column's type asserted equal to the input schema | `tests/integration/test_roundtrip.py::test_types_survive` |
+| AC-3 | All four codecs write successfully; default asserted `snappy`; unknown codec exits 2 with no file created | `tests/test_cli.py::test_compression_flag`, `::test_rejects_unknown_codec` |
+| AC-4 | Write into a read-only dir exits non-zero and the message contains the path | `tests/test_cli.py::test_unwritable_path` |
+
+AC-5 is unticked and marked DESCOPED in `spec.md` — SPEC-6 carries it. Descoped criteria are not
+listed here; their reason belongs in the contract.
+
+## Edge Cases — evidence
+
+| EC | Evidence | Where |
+|----|----------|-------|
+| EC-1 | Header-only CSV produces a valid file with the schema and zero rows, exit 0 | `tests/integration/test_roundtrip.py::test_empty_input` |
+| EC-2 | Existing output left byte-identical on exit 1; overwritten on exit 0 with `--force` | `tests/test_cli.py::test_refuses_overwrite` |
+| EC-3 | All-empty column types as string, not a failed inference | `tests/integration/test_roundtrip.py::test_empty_column` |
+
+## Test run
+
+- Command: `pytest`
+- Result: 41 passed, 0 failed, 1 skipped
+- Run against: `7d3e118`
+
+The skip is `test_zstd_level_tuning` — it needs a zstd build with level support that CI's wheel does
+not carry. AC-3 does not depend on it; codec selection is covered by the four-codec test above.
+
+## Deviations & follow-ups
+
+- Row-group sizing (AC-5) → SPEC-6.
+- The schema-threading change above widened the reader's public return type; SPEC-1 was bumped to v2
+  with a changelog row citing SPEC-2.
 ````
 
 ---
@@ -181,19 +216,25 @@ fails your commit if they drift. The `File` link points at the folder's `spec.md
 **The status is stored twice, on purpose.** `**Status:** 🟢 Validated` in `spec.md`'s header and
 `Validated` in the INDEX row. `check-status-sync.sh` blocks the commit if they disagree, if the word
 isn't one of the six legal tokens, or if the status *lags reality* — a spec whose folder has an
-`implementation.md` can't still claim `In Progress`.
+`audit-trail.md` can't still claim `In Progress`.
 
-**Acceptance criteria are the definition of done.** Once `implementation.md` exists,
+**Acceptance criteria are the definition of done.** Once `audit-trail.md` exists,
 `check-ac-closeout.sh` blocks the commit while any `- [ ] AC-N` remains unticked in `spec.md` —
 unless that line says `DESCOPED`. That's the only escape hatch, and it costs you a written reason,
 which is why AC-5 explains itself and names the spec that inherited it.
+
+**A ticked box must say what closed it.** The same check also blocks the commit if an AC ticked in
+`spec.md` is never cited in `audit-trail.md`. That's why the trail carries a row per AC naming a real
+test path: `spec.md` records the *claim*, the trail records the *evidence*, and neither file can
+assert done on its own. It's also what stops the trail from decaying into a one-line "tests pass" —
+the mapping from criterion to test exists in no other file, so if it isn't written here it is lost.
 
 **The changelog records why, not just what.** The `Driver` column names the `SPEC-N` whose work
 forced the change — `SPEC-4` widened the writer contract, `SPEC-6` took over row-group tuning — or
 `self` for a purely internal revision. Once a spec is `🟣 Planned` or later, any substantive edit to
 `spec.md` or `tech-design.md` must bump `**Version:**` and add a row to `spec.md`'s changelog, and
 `check-spec-version.sh` enforces it. Ticking a checkbox, advancing the status, and writing
-`implementation.md` are all explicitly *not* substantive, so the normal implement → verify →
+`audit-trail.md` are all explicitly *not* substantive, so the normal implement → verify →
 close-out pass needs no bumps.
 
 **Open questions are a ledger, not a queue.** Both `Q-1` blocks here are *answered* and they stayed in

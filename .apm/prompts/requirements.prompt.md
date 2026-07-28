@@ -71,8 +71,8 @@ straight to Phase 4. If the split itself was a real judgement call, that is a `Q
 
 ### Phase 4: Create Spec Files
 A spec is a **folder**, not a single file: `specs/SPEC-X-spec-name/` holds the canonical `spec.md`
-plus, later, `tech-design.md` (added by `/technical-design`) and `implementation.md` (added at
-close-out), and any attachments the spec refers to (`mockups/`, `source/` for imported material, …).
+plus, later, `tech-design.md` (added by `/technical-design`) and `audit-trail.md` (added at
+verification), and any attachments the spec refers to (`mockups/`, `source/` for imported material, …).
 For each spec (in `ask` mode, after user approval of the breakdown):
 - Create the folder `specs/SPEC-X-spec-name/` and write `spec.md` from
   `.spec-workflow/templates/spec.template.md`

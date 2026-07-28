@@ -56,8 +56,9 @@ git_init() { git -C "$1" init -q; git -C "$1" config user.email t@t.io; git -C "
 # ---------------------------------------------------------------------------
 # Fixture A — the status / AC / open-question state machine.
 #   fixture_state <name> <hdr-status> <index-status> <ac-box> <answer> <impl?> <branch>
-# The baseline is committed BEFORE implementation.md is written and before the branch is cut, so
-# implementation.md stays untracked — which is what the checks see in real use.
+# The baseline is committed BEFORE audit-trail.md is written and before the branch is cut, so
+# audit-trail.md stays untracked — which is what the checks see in real use. The seeded trail cites
+# AC-1, so it satisfies the close-out citation gate; tests that exercise that gate overwrite it.
 # ---------------------------------------------------------------------------
 fixture_state() {
   local d="$WORK/$1"; rm -rf "$d"; mkdir -p "$d/specs/SPEC-36-glossary"
@@ -77,7 +78,8 @@ fixture_state() {
 EOF
   printf '| ID | Title | V | Status |\n|---|---|---|---|\n| SPEC-36 | Glossary | v1 | %s |\n' "$3" > "$d/specs/INDEX.md"
   git -C "$d" add -A >/dev/null; git -C "$d" commit -qm baseline
-  [ "$6" = yes ] && echo "test evidence" > "$d/specs/SPEC-36-glossary/implementation.md"
+  [ "$6" = yes ] && echo "AC-1 closed by tests/test_glossary.py::test_exists" \
+                       > "$d/specs/SPEC-36-glossary/audit-trail.md"
   git -C "$d" checkout -q -b "$7"
   echo "$d"
 }
@@ -130,7 +132,7 @@ bump_to_v2() {   # <dir> — a proper bump: version header + a new changelog row
 section "1. Status / AC / open-question state machine"
 ###############################################################################
 
-echo "  -- the reported bug: SPEC branch, In Planning, open question, no implementation.md"
+echo "  -- the reported bug: SPEC branch, In Planning, open question, no audit-trail.md"
 d=$(fixture_state s1 "In Planning" "In Planning" " " "" no SPEC-36-work)
 for h in check-status-sync check-ac-closeout check-open-questions check-spec-version; do
   run "$d" "$h.sh"; is_rc 0 "$h stays silent"
@@ -160,14 +162,31 @@ else bad "In Planning on a SPEC branch with an open Q is a legal, quiet state" \
 
 echo "  -- artifact-evidence floors still fire"
 d=$(fixture_state s4 "In Planning" "In Planning" " " " confirmed" yes SPEC-36-work)
-run "$d" check-status-sync.sh; is_rc 2 "implementation.md forces at least In Review"
+run "$d" check-status-sync.sh; is_rc 2 "audit-trail.md forces at least In Review"
 says "In Review" "and says which status to set"
 run "$d" check-ac-closeout.sh; is_rc 2 "unticked AC at close-out blocks"
 
 d=$(fixture_state s5 "In Review" "In Review" x " confirmed" yes SPEC-36-work)
 run "$d" check-status-sync.sh; is_rc 2 "complete close-out forces Validated"
 says "Validated" "and says which status to set"
-run "$d" check-ac-closeout.sh; is_rc 0 "ticked ACs pass close-out"
+run "$d" check-ac-closeout.sh; is_rc 0 "ticked ACs cited in the trail pass close-out"
+
+echo "  -- the trail must say what closed each ticked AC"
+d=$(fixture_state s5b "In Review" "In Review" x " confirmed" yes SPEC-36-work)
+echo "all tests pass" > "$d/specs/SPEC-36-glossary/audit-trail.md"   # a stub trail, no AC cited
+run "$d" check-ac-closeout.sh; is_rc 2 "a ticked AC absent from the trail blocks"
+says "AC-1" "and names the uncited criterion"
+
+d=$(fixture_state s5c "In Review" "In Review" x " confirmed" yes SPEC-36-work)
+echo "AC-10 closed by tests/test_other.py" > "$d/specs/SPEC-36-glossary/audit-trail.md"
+run "$d" check-ac-closeout.sh; is_rc 2 "AC-10 in the trail does not satisfy a ticked AC-1"
+
+echo "  -- DESCOPED criteria owe the trail nothing"
+d=$(fixture_state s5d "In Review" "In Review" " " " confirmed" yes SPEC-36-work)
+s="$d/specs/SPEC-36-glossary/spec.md"
+sed -i.bak 's/- \[ \] AC-1 the glossary exists/- [ ] AC-1 DESCOPED — moved to SPEC-40/' "$s"; rm -f "$s.bak"
+echo "nothing was closed here" > "$d/specs/SPEC-36-glossary/audit-trail.md"
+run "$d" check-ac-closeout.sh; is_rc 0 "an unticked DESCOPED AC is exempt from both gates"
 
 echo "  -- header vs INDEX drift"
 d=$(fixture_state s6 "In Review" "Validated" x " confirmed" yes SPEC-36-work)
@@ -268,8 +287,8 @@ section "3. Stale session-end hook safety net (stop_hook_active)"
 # so an unrepairable condition can never become an unbounded block loop.
 
 # One fixture that makes ALL FOUR checks block at once:
-#   status-sync   -> implementation.md present but status is In Planning
-#   ac-closeout   -> implementation.md present with an unticked AC
+#   status-sync   -> audit-trail.md present but status is In Planning
+#   ac-closeout   -> audit-trail.md present with an unticked AC
 #   open-questions-> spec.md changed vs HEAD and carries an unanswered Q-1  (ceiling is fine at
 #                    In Planning, so we raise the status via the INDEX-matching header below)
 #   spec-version  -> Planned at HEAD, substantive body change, no bump
@@ -294,7 +313,7 @@ EOF
 printf '| ID | Title | V | Status |\n|---|---|---|---|\n| SPEC-36 | Glossary | v1 | Planned |\n' > "$d/specs/INDEX.md"
 git -C "$d" add -A >/dev/null; git -C "$d" commit -qm baseline
 git -C "$d" checkout -q -b SPEC-36-work
-echo "evidence" > "$d/specs/SPEC-36-glossary/implementation.md"
+echo "evidence" > "$d/specs/SPEC-36-glossary/audit-trail.md"
 sed -i.bak 's/list the original terms/list a totally different set of terms/' "$d/specs/SPEC-36-glossary/spec.md"; rm -f "$d/specs/SPEC-36-glossary/spec.md.bak"
 cat >> "$d/specs/SPEC-36-glossary/spec.md" <<'EOF'
 

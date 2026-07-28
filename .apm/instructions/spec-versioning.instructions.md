@@ -9,7 +9,7 @@ Every spec carries a `**Version:**` (`v1`, `v2`, …) and an inline `## Changelo
 and makes its evolution traceable inline. The rules:
 
 - A spec is a folder: `spec.md` (the contract, which carries `**Version:**` and `## Changelog`),
-  `tech-design.md` (the HOW), `implementation.md` (close-out evidence), plus any attachments.
+  `tech-design.md` (the HOW), `audit-trail.md` (the verification record), plus any attachments.
 - A spec starts at `v1`. While it is still `🔵 In Planning`, edits are free drafting — no bump.
 - Once a spec is `🟣 Planned` or later, **any substantive change** to its `spec.md` or
   `tech-design.md` must bump `**Version:**` and add a `## Changelog` row — both live in `spec.md`, so
@@ -18,7 +18,7 @@ and makes its evolution traceable inline. The rules:
   version-gated (no bump): advancing status, editing the changelog, editing `## Open Questions`
   (raising or answering a question is bookkeeping — but whatever the answer then *changes* in the
   contract or design is substantive, so cite the `Q-N` in that changelog row), ticking ACs,
-  `implementation.md` (close-out evidence), and attachments (`mockups/`, `source/`, …) — so the normal
+  `audit-trail.md` (the verification record), and attachments (`mockups/`, `source/`, …) — so the normal
   implement → verify → close-out flow needs no bumps.
 - The **Driver** column names *why*: the `SPEC-N` whose work drove the change (especially when
   another spec's design/implementation forced this one to change), or `self` for an in-spec

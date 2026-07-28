@@ -72,7 +72,7 @@ done
 
 cp "$SELF"/check-*.sh "$SELF/pre-commit" "$SW/hooks/"
 cp "$SELF/checks.spec.json" "$SW/"
-cp "$PKG/templates/spec.template.md" "$PKG/templates/INDEX.template.md" "$PKG/templates/PRD.template.md" "$PKG/templates/context-map.template.md" "$SW/templates/" 2>/dev/null || true
+cp "$PKG/templates/spec.template.md" "$PKG/templates/INDEX.template.md" "$PKG/templates/PRD.template.md" "$PKG/templates/context-map.template.md" "$PKG/templates/audit-trail.template.md" "$SW/templates/" 2>/dev/null || true
 chmod +x "$SW/hooks/"*.sh "$SW/hooks/pre-commit" 2>/dev/null || true
 
 # MANAGED: MANUAL-STEPS.md is regenerated per environment (it reflects the machine that ran the

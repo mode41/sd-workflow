@@ -18,7 +18,8 @@ assume a framework the project has not established.
 **Where this fits:** writing and running tests against the acceptance criteria is the **In Review**
 phase of the workflow. A spec is `In Review` while verification is underway; green tests plus every
 acceptance criterion exercised are what gate the move to `Validated` at close-out. This command
-produces that evidence — the workflow steps set the status.
+produces that evidence and records it in the spec's `audit-trail.md` (Phase 5) — the workflow steps
+set the status.
 
 ## Before Starting
 
@@ -118,6 +119,28 @@ profile if present, else discover them from the project's build configuration:
 3. Run all tests together
 4. Fix any failures before completing
 
+## Phase 5: Record the Audit Trail
+
+**Only when invoked with a `SPEC-X`** (a bare file path has no spec to record against). Write
+`specs/SPEC-X-*/audit-trail.md` from `.spec-workflow/templates/audit-trail.template.md`. This is the
+spec's verification record and the only place the **AC → evidence** mapping lives: `spec.md` says a
+criterion is met, the trail says which test proves it. `check-ac-closeout.sh` blocks the commit if an
+AC ticked in `spec.md` is never cited there.
+
+Read the mechanical facts out of git rather than from memory:
+
+- `git branch --show-current` — the branch
+- `git merge-base main HEAD` then `git log --oneline <base>..HEAD` — the commit range
+- `git diff --name-only <base>..HEAD` — what the range touched
+
+Then fill in what git cannot know: one row per AC naming the actual test (`path::test_name`, openable
+by a reader), the same for each EC, and the test run **as observed** — the real command, the real
+counts, and any skip, flake, or environment limit. An honest gap is worth more than a green claim.
+
+Two rules about timing: do not create this file before there is real evidence for it — its existence
+alone pushes the spec's status floor to **In Review** — and do not tick the AC boxes in `spec.md`
+until the trail cites them, or the commit is blocked.
+
 ## Checklist Before Completion
 - [ ] Unit tests follow the exact pattern of existing unit tests in this project
 - [ ] Integration tests use the project's existing base class / fixture / helper
@@ -125,3 +148,4 @@ profile if present, else discover them from the project's build configuration:
 - [ ] Tests compile and pass
 - [ ] No test depends on execution order
 - [ ] Test data cleanup is handled consistently with the rest of the suite
+- [ ] `audit-trail.md` written, citing every AC that is ticked in `spec.md` (spec runs only)

@@ -14,8 +14,16 @@ Validated`, plus a terminal `Deprecated` reachable from any state (see the legen
 2. **Technical Design** (`/technical-design SPEC-X`) — defines HOW (DB schema, API contracts, components). → status **🟣 Planned**
 3. **Technical Design Refinement** — execute the Plan Review Workflow for the tech design. (stays **Planned**)
 4. **Implementation** — code against the tech design, one branch per SPEC-X. When implementation begins, make sure you are on the spec's `SPEC-N` branch — **if the current branch is already a `SPEC-N` branch for this spec (e.g. a git worktree already checked out for parallel implementation), use it and do NOT create a new branch**; only create one if you are not already on it. → set status to **🟡 In Progress** in both the spec header and `specs/INDEX.md`. If your implementation changes another spec that is already **Planned or later** (a shared schema, API, or contract), update that spec too — bump its version + add a changelog row, or deprecate it if its feature no longer exists.
-5. **Verification** — write/run tests against the acceptance criteria (via `/write-tests`), results written to `implementation.md` in the spec folder. → status **🟠 In Review**
-6. **Close-out** — in `spec.md`, tick every satisfied acceptance-criterion checkbox (`- [x] AC-N`), mark any intentionally-skipped one `DESCOPED` with a reason (leave it `- [ ]`), write the test evidence to `implementation.md` in the spec folder, then set status to **🟢 Validated** in **both** the `spec.md` header and `specs/INDEX.md`.
+5. **Verification** — write/run tests against the acceptance criteria (via `/write-tests`), results written to `audit-trail.md` in the spec folder, from `.spec-workflow/templates/audit-trail.template.md`. → status **🟠 In Review**
+6. **Close-out** — in `spec.md`, tick every satisfied acceptance-criterion checkbox (`- [x] AC-N`), mark any intentionally-skipped one `DESCOPED` with a reason (leave it `- [ ]`), complete `audit-trail.md`, then set status to **🟢 Validated** in **both** the `spec.md` header and `specs/INDEX.md`.
+
+The audit trail is the spec's verification record, and the only place the **AC → evidence** mapping
+exists: `spec.md` says a criterion is met, `audit-trail.md` says what proves it. `check-ac-closeout.sh`
+blocks the commit if any AC ticked in `spec.md` is never cited there. Read the mechanical facts out of
+git rather than from memory — `git merge-base main HEAD`, `git log --oneline <base>..HEAD`,
+`git diff --name-only <base>..HEAD` — and record the test run as observed, including skips and
+failures. Do not create the file before there is real evidence for it: its mere existence pushes the
+status floor to **In Review**.
 
 Four checks enforce this — the shared scripts in `.spec-workflow/hooks/` (`check-ac-closeout.sh`:
 every AC ticked or DESCOPED once a close-out section exists; `check-status-sync.sh`: spec header and
@@ -30,7 +38,7 @@ next workflow step was invoked".
 Note what `check-status-sync.sh` does **not** claim: being on the `SPEC-N` branch is not evidence that
 implementation has started. Cutting the branch early — to plan on it, or to work through an open
 question — is fine, and the spec may legitimately still be `In Planning`. Only artifacts in the spec
-folder (an `implementation.md`) push the status floor up.
+folder (an `audit-trail.md`) push the status floor up.
 
 When implementing a spec, always read these files first:
 - The spec folder `specs/SPEC-X-*/`: `spec.md` (the contract) and `tech-design.md` (the HOW)

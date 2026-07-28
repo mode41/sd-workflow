@@ -4,18 +4,18 @@ Keep AI coding agents on rails. Every change starts from a written spec with tes
 criteria, gets a design that two reviewer agents have argued with, and **cannot be marked done** until
 the criteria are ticked and the evidence is recorded — enforced by git hooks, not good intentions.
 
-It is **agent-agnostic**: one source of truth, compiled by
+The whole workflow is **agent-agnostic** and packaged to be compiled by
 [Microsoft APM](https://microsoft.github.io/apm/) (Agent Package Manager) into whichever coding-agent
 harness your project uses — `.claude/`, `.opencode/`, `.cursor/`, `.github/`, … A static website and a
 complex information-management system use the **exact same workflow**. Stack- and design-specific
-guidance is optional and lives in separate [bundles](docs/extending-with-bundles.md); *where* your
+guidance is optional and lives in separate injectable [bundles](docs/extending-with-bundles.md); *where* your
 governing context lives — architecture, security rules, ADRs, UX — is likewise pluggable, through a
 [context map](docs/extending-with-bundles.md) of files and optional MCP providers.
 
 ## The loop
 
 One spec per unit of work. A spec is a **folder** — `specs/SPEC-N-name/` holding `spec.md` (the
-contract), `tech-design.md` (the how), `implementation.md` (close-out evidence), and any attachments
+contract), `tech-design.md` (the how), `audit-trail.md` (the verification record), and any attachments
 the spec refers to (mockups, imported source). Each step advances that spec's **status**, which must
 stay identical in `spec.md` and in `specs/INDEX.md` — the hooks fail your commit if they drift.
 
@@ -136,7 +136,7 @@ That interviews you about the project, fills in `docs/PRD.md`, and splits the wo
 /technical-design SPEC-1     → design reviewed by both reviewer agents, written as tech-design.md
                              → implement it on a SPEC-1 branch
 /write-tests SPEC-1          → tests written and run against the acceptance criteria
-                             → tick the criteria, record the evidence in implementation.md, done
+                             → tick the criteria, record the evidence in audit-trail.md, done
 ```
 
 Adding a feature to a project that already has a PRD? Same entry point — `/requirements <the feature>`
@@ -151,7 +151,7 @@ the end of that journey, annotated with which hook enforces which convention.
 .spec-workflow/            # this package's namespace — commit this. Mixed: most of it is managed
                            # (refreshed every install), the files marked ← YOURS are seeded once.
   hooks/                   #   managed: check-*.sh, pre-commit, checks.sha256 (the git enforcement)
-  templates/               #   managed: current spec/INDEX/PRD/context-map templates (migration reference)
+  templates/               #   managed: current spec/INDEX/PRD/context-map/audit-trail templates (migration reference)
   checks.spec.json         #   managed: neutral metadata for the checks (where they live)
   config.schema.json       #   managed: describes config.json (drives editor validation)
   config.json              #   ← YOURS. Seeded once; values never overwritten. See below.
@@ -163,7 +163,7 @@ the end of that journey, annotated with which hook enforces which convention.
   MANUAL-STEPS.md          #   generated per-machine checklist of what the installer couldn't do
                            #   (git-ignored via a managed .spec-workflow/.gitignore — don't commit)
 specs/                     # your specs (SPEC-N-name/ folders) + INDEX.md   ← living data, seeded once
-                           #   each folder: spec.md + tech-design.md + implementation.md + attachments
+                           #   each folder: spec.md + tech-design.md + audit-trail.md + attachments
                            #   a parked spec may sit under specs/backlog/SPEC-N-name/ instead
 docs/PRD.md                # living data, seeded once (default `business` context source)
 docs/SECURITY-RULES.md     # living data, seeded once (default `security` source; drift-notified on update)

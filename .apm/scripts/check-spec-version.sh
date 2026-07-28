@@ -4,7 +4,7 @@
 # spec's '**Version:**' (vN) and add a '## Changelog' row — both of which live in spec.md — so the
 # spec's evolution stays traceable. Deprecating a spec (status -> Deprecated) likewise requires a
 # bump + changelog row. A spec is a FOLDER (specs/SPEC-N-name/): spec.md + tech-design.md gate;
-# implementation.md (close-out evidence) and any attachments (mockups/, source/, …) are NOT gated.
+# audit-trail.md (the verification trail) and any attachments (mockups/, source/, …) are NOT gated.
 # NON-substantive edits never trigger it: the Status / Last Updated / Version / Designed header lines,
 # the whole '## Changelog' and '## Open Questions' sections, and acceptance-criterion checkbox ticking
 # ([ ] <-> [x]) are all exempt — so the normal requirements -> design -> implement -> verify ->
