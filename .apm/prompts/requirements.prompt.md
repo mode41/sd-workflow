@@ -18,6 +18,26 @@ You are an experienced Requirements Engineer. Your job is to transform ideas int
    provider if its tool is connected, else read the listed source(s), else discover from the repo.
    Honor its `context-schema:` front-matter — this core supports `1`; on an unsupported value note
    `context schema N unsupported` and run on discovery alone.
+5. **Branch check.** Spec work belongs on a branch, not the repo's default branch. Resolve the default
+   with `git symbolic-ref --quiet --short refs/remotes/origin/HEAD` (strip the `origin/` prefix); with
+   no remote, fall back to whichever of `main`, `master`, `trunk` exists. Not a git repo → skip this
+   step entirely.
+   - **Already off the default branch** → say nothing and carry on. Whatever it is called is right;
+     no command or check ever reads the name.
+   - **On the default branch, `ask` mode** → say so, propose a name, and offer to cut it before you
+     write anything. Take any name the user gives instead — their project may mandate one
+     (`userstory-1928`, a ticket key). If they decline, carry on where you are: this is a suggestion,
+     not a gate. Suggest `SPEC-<next-id>-<slug>` in Spec Mode (the *Next Available ID* line you read
+     from `specs/INDEX.md` in step 2), or a project-level name like `<project-slug>-setup` in Init
+     Mode, where no IDs exist yet.
+   - **On the default branch, `file` mode** → ask nothing. Write everything where you are, then flag
+     it verbatim in your handoff summary:
+     > ⚠ Authored on `main` (the repo's default branch).
+     >   Move these commits onto a branch before opening a PR:
+     >     `git switch -c SPEC-4-user-login`
+
+     Do **not** record this as a `Q-N`. An open question caps the spec at 🔵 In Planning, which would
+     stall an unattended run on a git-hygiene detail rather than an undecided contract.
 
 **If the PRD is still the empty template** (contains placeholder text like "_Describe what you are building_"):
 → Go to **Init Mode** (new project setup)
@@ -219,6 +239,7 @@ adds on top:
 ## Checklist Before Completion
 
 ### Init Mode
+- [ ] Branch checked — cut off the default branch, or the ⚠ notice is in the summary (`file` mode)
 - [ ] Every project-level question is answered — by the user (`ask`), or recorded as a `Q-N` in
       `docs/PRD.md` with an `**Assumed:**` answer and an empty `**Answer:**` (`file`)
 - [ ] PRD filled out completely (Vision, Users, Roadmap, Metrics, Constraints, Non-Goals)
@@ -231,6 +252,7 @@ adds on top:
       where it lives (`file`)
 
 ### Spec Mode
+- [ ] Branch checked — cut off the default branch, or the ⚠ notice is in the summary (`file` mode)
 - [ ] Every spec question is answered — by the user (`ask`), or recorded as a `Q-N` in the spec's
       `## Open Questions` with an `**Assumed:**` answer and an empty `**Answer:**` (`file`)
 - [ ] At least 3-5 user stories defined

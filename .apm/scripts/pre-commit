@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # Agent-independent spec-workflow gate (git pre-commit) — the AGENT-AGNOSTIC enforcement floor.
 # Runs the SAME shared checks as the per-harness finish-boundary hooks, so a commit from ANY tool
-# (Claude Code, opencode, Cursor, a plain editor) or a human is blocked when a SPEC-* spec's
-# acceptance criteria, status, or version have drifted. The check scripts read the working tree and
-# are silent (exit 0) off a SPEC-* branch, so ordinary commits are unaffected.
+# (Claude Code, opencode, Cursor, a plain editor) or a human is blocked when a spec's acceptance
+# criteria, status, or version have drifted. The check scripts read the working tree and judge only
+# the specs a commit actually touches — a spec folder, or a specs/INDEX.md row — so ordinary commits
+# are unaffected. No check reads the branch name; any naming convention works.
 #
 # Deployed (by init-and-wire.sh) into a committed .spec-workflow/hooks/ dir and activated with
 #   git config core.hooksPath .spec-workflow/hooks

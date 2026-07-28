@@ -24,7 +24,7 @@ stay identical in `spec.md` and in `specs/INDEX.md` — the hooks fail your comm
 | Define **what** — user stories, acceptance criteria, edge cases | `/requirements <your idea>` | 🔵 In Planning |
 | Design **how** — schema, API contracts, components | `/technical-design SPEC-1` | 🟣 Planned |
 | Two rounds of independent architecture + security review | *(automatic)* | 🟣 Planned |
-| Build it, on a `SPEC-1` branch | — | 🟡 In Progress |
+| Build it, on the spec's branch | — | 🟡 In Progress |
 | Prove it against the acceptance criteria | `/write-tests SPEC-1` | 🟠 In Review |
 | Tick every criterion, record the test evidence | — | 🟢 Validated |
 
@@ -134,7 +134,7 @@ That interviews you about the project, fills in `docs/PRD.md`, and splits the wo
 
 ```
 /technical-design SPEC-1     → design reviewed by both reviewer agents, written as tech-design.md
-                             → implement it on a SPEC-1 branch
+                             → implement it on the spec's branch
 /write-tests SPEC-1          → tests written and run against the acceptance criteria
                              → tick the criteria, record the evidence in audit-trail.md, done
 ```

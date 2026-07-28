@@ -14,9 +14,9 @@
 # Validate-only (it never edits): the stderr message tells the agent to bump spec.md + add a changelog
 # row, citing the driving SPEC-N. Silent (exit 0) when: not a git repo, no gated doc changed vs HEAD,
 # the spec is new (spec.md absent at HEAD — still drafting toward v1), it was still 'In Planning' at
-# HEAD, or it is already 'Deprecated' at HEAD (a frozen tombstone). Runs on any branch — unlike the
-# other two hooks it is not branch-gated, because cross-spec edits are the whole point; it stays quiet
-# by only acting on specs that actually changed.
+# HEAD, or it is already 'Deprecated' at HEAD (a frozen tombstone). The branch name is never read — no
+# check reads it, so any convention your project requires works; it stays quiet by only acting on
+# specs that actually changed.
 #
 # Stale session-end hook safety net (see check-ac-closeout.sh).
 if [ -z "${SPEC_WORKFLOW_ROOT:-}" ] && [ ! -t 0 ]; then

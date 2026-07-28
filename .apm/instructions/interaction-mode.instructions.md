@@ -83,7 +83,7 @@ and say which `Q-N` is blocking.
 that skips the courtesy check is still stopped at commit time. Resolve a block by answering the
 question, or by rolling the status back — never by deleting a question you raised.
 
-An open question is a *ceiling*, and nothing imposes a conflicting floor: you may sit on the `SPEC-N`
+An open question is a *ceiling*, and nothing imposes a conflicting floor: you may sit on the spec's
 branch at `🔵 In Planning` for as long as the question is open, and discuss it freely. No hook fires
 while you are talking it through — they run only when you commit.
 

@@ -18,9 +18,9 @@
 # '**Answer:**' line (write your choice, or 'confirmed' to accept the assumption), or by deleting the
 # question if it no longer matters. Answered questions stay in the file as the decision record.
 #
-# Validate-only (it never edits). Runs on ANY branch — like check-spec-version.sh and unlike the two
-# branch-gated checks — because questions are raised by /requirements and /technical-design, which run
-# before a SPEC-N branch exists. It stays quiet by acting only on specs that actually changed vs HEAD.
+# Validate-only (it never edits). The branch name is never read — no check reads it, so any convention
+# your project requires works — and questions are raised by /requirements and /technical-design, which
+# may well run before any branch is cut. It stays quiet by acting only on specs that changed vs HEAD.
 # Deprecated specs are exempt (a tombstone keeps whatever it had).
 #
 # Stale session-end hook safety net (see check-ac-closeout.sh).

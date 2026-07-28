@@ -18,7 +18,8 @@ Key locations:
   shape). All three are just the defaults the context map points at; repoint any of them as needed.
 - `.spec-workflow/` — the deployed enforcement machinery (the git pre-commit checks).
 
-Start a new project with `/requirements <your idea>`; then `/technical-design SPEC-1`, implement on a
-`SPEC-N` branch, `/write-tests`, and close out. Status must stay identical in each spec's `spec.md`
+Start a new project with `/requirements <your idea>`; then `/technical-design SPEC-1`, implement on
+the spec's branch (name it whatever your project requires — nothing reads it), `/write-tests`, and
+close out. Status must stay identical in each spec's `spec.md`
 `**Status:**` header and its `specs/INDEX.md` row (the hooks enforce this).
 <!-- spec-workflow:end -->

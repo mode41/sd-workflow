@@ -1,16 +1,16 @@
 # Spec Index
 
 > Central tracking for all specs. Status is set at each workflow step — `requirements`
-> (In Planning), `technical-design` (Planned), implementation on the `SPEC-N` branch
+> (In Planning), `technical-design` (Planned), implementation on the spec's branch
 > (In Progress), and close-out (Validated) — and kept in lockstep with each spec's own
 > `**Status:**` header by the shared `.spec-workflow/hooks/check-status-sync.sh` check (a git
-> pre-commit hook). Cutting the `SPEC-N` branch does not by itself make a spec `In Progress` — set
-> that when implementation actually starts.
+> pre-commit hook). Cutting the branch does not by itself make a spec `In Progress` — set that when
+> implementation actually starts. Branch names are yours to choose; nothing here reads them.
 
 ## Status Legend
 - **🔵 In Planning** — requirements being written (the WHAT); spec not yet complete
 - **🟣 Planned** — tech design done (the HOW); ready to implement
-- **🟡 In Progress** — implementation underway on the `SPEC-N` branch
+- **🟡 In Progress** — implementation underway on the spec's branch
 - **🟠 In Review** — verification / QA underway (tests being written & run against the ACs)
 - **🟢 Validated** — acceptance criteria met, tests green, complete
 - **⚫ Deprecated** — spec dropped / superseded; kept as a tombstone (not rewritten) so its

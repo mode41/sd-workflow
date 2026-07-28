@@ -132,14 +132,14 @@ bump_to_v2() {   # <dir> — a proper bump: version header + a new changelog row
 section "1. Status / AC / open-question state machine"
 ###############################################################################
 
-echo "  -- the reported bug: SPEC branch, In Planning, open question, no audit-trail.md"
+echo "  -- the reported bug: In Planning, open question, no audit-trail.md"
 d=$(fixture_state s1 "In Planning" "In Planning" " " "" no SPEC-36-work)
 for h in check-status-sync check-ac-closeout check-open-questions check-spec-version; do
   run "$d" "$h.sh"; is_rc 0 "$h stays silent"
 done
 
-echo "  -- same state on a non-SPEC branch (planning before the branch is cut)"
-d=$(fixture_state s2 "In Planning" "In Planning" " " "" no feature/scratch)
+echo "  -- the same, on a branch named to a company convention"
+d=$(fixture_state s2 "In Planning" "In Planning" " " "" no userstory-1928)
 for h in check-status-sync check-ac-closeout check-open-questions; do
   run "$d" "$h.sh"; is_rc 0 "$h stays silent"
 done
@@ -201,6 +201,53 @@ done
 d=$(fixture_state s8 "Deprecated" "Deprecated" " " "" yes SPEC-36-work)
 run "$d" check-status-sync.sh; is_rc 0 "Deprecated tombstone exempt from status floors"
 run "$d" check-ac-closeout.sh; is_rc 0 "Deprecated tombstone exempt from AC close-out"
+
+###############################################################################
+section "1b. Which spec gets judged — never the branch name"
+###############################################################################
+# The checks used to read the branch and bail unless it matched SPEC-[0-9]+, so a project with its
+# own convention ("userstory-1928") silently lost two of the four guards. Selection is now driven by
+# what the change TOUCHES: any file under a spec folder, or a changed specs/INDEX.md row.
+
+echo "  -- a company-convention branch is enforced exactly like a SPEC-N one"
+d=$(fixture_state b1 "In Review" "Validated" x " confirmed" yes userstory-1928)
+run "$d" check-status-sync.sh; is_rc 2 "header/INDEX drift blocks on userstory-1928"
+says "drift" "and reports it as drift"
+d=$(fixture_state b2 "In Planning" "In Planning" " " " confirmed" yes userstory-1928)
+run "$d" check-ac-closeout.sh; is_rc 2 "an unticked AC at close-out blocks on userstory-1928"
+run "$d" check-status-sync.sh; is_rc 2 "the audit-trail floor fires on userstory-1928"
+
+echo "  -- and on the default branch, where no branch was ever cut"
+d=$(fixture_state b3 "In Review" "Validated" x " confirmed" yes scratch)
+git -C "$d" checkout -q -                      # back to whatever this repo's default branch is
+run "$d" check-status-sync.sh; is_rc 2 "drift is caught on the default branch too"
+
+echo "  -- a status edit made in specs/INDEX.md ALONE still selects its spec"
+d=$(fixture_state b4 "In Planning" "In Planning" " " " confirmed" no userstory-1928)
+sed -i.bak 's/| v1 | In Planning |/| v1 | Validated |/' "$d/specs/INDEX.md"; rm -f "$d/specs/INDEX.md.bak"
+run "$d" check-status-sync.sh; is_rc 2 "INDEX-only drift blocks (spec folder untouched)"
+says "drift" "and reports it as drift"
+
+echo "  -- a source-only change selects nothing (the deliberate loosening)"
+# Drift already committed at HEAD: this commit touches no spec folder and no INDEX row, so there is
+# nothing to re-judge. The commit that INTRODUCED the drift was blocked; the next one touching the
+# spec will be too.
+d=$(fixture_state b5 "In Review" "Validated" x " confirmed" no userstory-1928)
+echo "print('hi')" > "$d/app.py"
+for h in check-status-sync check-ac-closeout check-open-questions check-spec-version; do
+  run "$d" "$h.sh"; is_rc 0 "$h silent on a source-only change"
+done
+
+echo "  -- one commit spanning two drifted specs reports BOTH"
+d=$(fixture_state b6 "In Review" "In Review" x " confirmed" yes userstory-1928)
+mkdir -p "$d/specs/SPEC-40-atlas"
+printf '# SPEC-40 Atlas\n**Status:** In Planning\n**Version:** v1\n\n## Acceptance Criteria\n- [x] AC-1 the atlas exists\n' \
+  > "$d/specs/SPEC-40-atlas/spec.md"
+echo "AC-1 closed by tests/test_atlas.py::test_exists" > "$d/specs/SPEC-40-atlas/audit-trail.md"
+printf '| SPEC-40 | Atlas | v1 | In Planning |\n' >> "$d/specs/INDEX.md"
+run "$d" check-status-sync.sh; is_rc 2 "two drifted specs in one change block"
+says "SPEC-36" "and names the first"
+says "SPEC-40" "and names the second"
 
 ###############################################################################
 section "2. Spec versioning (check-spec-version.sh)"

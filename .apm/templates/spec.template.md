@@ -3,7 +3,8 @@
 <!-- Canonical status tokens (use verbatim; keep this header and the specs/INDEX.md row equal):
      🔵 In Planning · 🟣 Planned · 🟡 In Progress · 🟠 In Review · 🟢 Validated · ⚫ Deprecated
      Set by: requirements → In Planning, technical-design → Planned,
-     implementation (SPEC-N branch) → In Progress, verification → In Review, close-out → Validated.
+     implementation (on the spec's branch) → In Progress, verification → In Review,
+     close-out → Validated.
      ⚫ Deprecated is terminal and reachable from ANY state: set it when the spec's feature no longer
      exists (superseded/dropped by another spec). Deprecate — don't rewrite; keep this file as a
      tombstone. -->
