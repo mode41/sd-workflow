@@ -22,9 +22,15 @@ every AC ticked or DESCOPED once a close-out section exists; `check-status-sync.
 INDEX row agree, use a legal status word, and match reality; `check-spec-version.sh`: a
 Planned-or-later spec that changed substantively — or was deprecated — must bump its version + add a
 changelog row; `check-open-questions.sh`: an unanswered `## Open Questions` entry holds the spec at
-the phase that raised it). They run **both** as a per-harness finish-boundary hook (e.g. a Claude Code
-`Stop` hook — blocks finishing on a `SPEC-*` branch) **and** as a git `pre-commit` hook (blocks a
-drifted commit from any tool or human; bypass with `git commit --no-verify`).
+the phase that raised it). They run as a git `pre-commit` hook — blocking a drifted commit from any
+tool or human; bypass a single commit with `git commit --no-verify`. That commit boundary is the only
+one they run at: no session-end hook is installed, because no harness has an event that means "the
+next workflow step was invoked".
+
+Note what `check-status-sync.sh` does **not** claim: being on the `SPEC-N` branch is not evidence that
+implementation has started. Cutting the branch early — to plan on it, or to work through an open
+question — is fine, and the spec may legitimately still be `In Planning`. Only artifacts in the spec
+folder (an `implementation.md`) push the status floor up.
 
 When implementing a spec, always read these files first:
 - The spec folder `specs/SPEC-X-*/`: `spec.md` (the contract) and `tech-design.md` (the HOW)

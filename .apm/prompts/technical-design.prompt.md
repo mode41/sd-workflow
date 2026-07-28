@@ -25,7 +25,7 @@ If the spec doesn't exist or has no acceptance criteria, stop and tell the user 
 `## Open Questions` entry with an empty `**Answer:**`, do not design and do not advance the status.
 Name the blocking `Q-N` and its file, and say that answering it (or `confirmed` to accept the
 `**Assumed:**` value) unblocks this command. Designing on an undecided contract is exactly what
-`check-open-questions.sh` will refuse to let you finish or commit.
+`check-open-questions.sh` will refuse to let you commit.
 
 ---
 
@@ -151,8 +151,8 @@ Once `tech-design.md` is written and approved, advance the status: set it to
 before this step the spec was `In Planning`.
 
 Advance it only if `spec.md` and `docs/PRD.md` have no unanswered question left — that is the gate
-you checked in Before Starting, and it is enforced at the finish boundary. Your *own* new questions
-in `tech-design.md` do not block reaching `Planned`; they block leaving it.
+you checked in Before Starting, and it is enforced at commit time. Your *own* new questions in
+`tech-design.md` do not block reaching `Planned`; they block leaving it.
 
 If the design introduces new DB tables:
 - Create the migration file in the location the project uses (discover the convention from existing migrations)

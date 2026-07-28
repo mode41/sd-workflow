@@ -16,7 +16,7 @@ Key locations:
 - `docs/PRD.md` — product requirements (default `business` source). `docs/SECURITY-RULES.md` — default
   `security` source. `ARCHITECTURE.md` — default `architecture` source (create as the project takes
   shape). All three are just the defaults the context map points at; repoint any of them as needed.
-- `.spec-workflow/` — the deployed enforcement machinery (git pre-commit + finish-hook checks).
+- `.spec-workflow/` — the deployed enforcement machinery (the git pre-commit checks).
 
 Start a new project with `/requirements <your idea>`; then `/technical-design SPEC-1`, implement on a
 `SPEC-N` branch, `/write-tests`, and close out. Status must stay identical in each spec's `spec.md`

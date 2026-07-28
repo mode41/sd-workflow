@@ -104,8 +104,9 @@ This:
 - merges the config forward (adds entries for newly-shipped reviewer agents, retires dropped ones)
   and prompts for any model you haven't chosen — see *Choosing models* below,
 - wires `git config core.hooksPath` (detect-and-preserve — see below),
-- emits each present harness's native finish hook (e.g. a Claude `Stop` hook) and stamps each
-  agent's configured model into the deployed agent files,
+- reconciles each present harness's native hooks (today that means *removing* the Claude `Stop` hook
+  older versions wired — see *Enforcement* below) and stamps each agent's configured model into the
+  deployed agent files,
 - writes **`.spec-workflow/MANUAL-STEPS.md`** — a regenerated checklist of everything the installer
   could *not* do for you (an existing `AGENTS.md` to extend, a foreign `core.hooksPath` to chain, an
   unsupported harness, etc.). Check the file after each run; resolved items drop off automatically.
@@ -151,7 +152,7 @@ the end of that journey, annotated with which hook enforces which convention.
                            # (refreshed every install), the files marked ← YOURS are seeded once.
   hooks/                   #   managed: check-*.sh, pre-commit, checks.sha256 (the git enforcement)
   templates/               #   managed: current spec/INDEX/PRD/context-map templates (migration reference)
-  finish-hook.spec.json    #   managed: neutral finish-hook metadata, compiled per harness
+  checks.spec.json         #   managed: neutral metadata for the checks (where they live)
   config.schema.json       #   managed: describes config.json (drives editor validation)
   config.json              #   ← YOURS. Seeded once; values never overwritten. See below.
   context-map.md           #   ← YOURS. Seeded once — where governing context lives
@@ -169,28 +170,32 @@ docs/SECURITY-RULES.md     # living data, seeded once (default `security` source
 ARCHITECTURE.md            # optional — default `architecture` source (create as the project takes shape)
 AGENTS.md                  # neutral project memory, seeded once (or workflow section appended if it exists)
 spec-workflow.supplemental.md  # your workflow tuning, seeded once, never overwritten
-.claude/ .opencode/ ...    # APM-deployed rules/commands/agents + our finish hooks & agent models
+.claude/ .opencode/ ...    # APM-deployed rules/commands/agents + our agent-model stamps
 ```
 
 ## Enforcement — what runs where
 
 The four checks (`check-ac-closeout`, `check-status-sync`, `check-spec-version`,
-`check-open-questions`) run on two layers:
+`check-open-questions`) run at **one** boundary: the **git pre-commit hook**. It works for any agent
+(or none), because it's git, not an agent feature — and a commit is a real workflow boundary.
 
-- **git pre-commit — the agent-agnostic floor.** Works for any agent (or none), because it's git,
-  not an agent feature. This is the guaranteed layer.
-- **Per-harness finish hooks — a bonus.** Where a harness has a finish/stop concept (e.g. Claude
-  Code's `Stop` hook), our installer emits it natively. Harnesses without one (e.g. opencode today)
-  rely on the git floor alone.
-
-Both layers run whatever `check-*.sh` the installer deployed — there is no list to keep in sync, and a
-check a newer version drops is pruned rather than left behind. A spec parked under
+It runs whatever `check-*.sh` the installer deployed — there is no list to keep in sync, and a check a
+newer version drops is pruned rather than left behind. A spec parked under
 `specs/backlog/SPEC-N-name/` is held to all four checks, exactly like one in the main tree.
+
+**Why there is no session-end hook.** Earlier versions also merged the checks into Claude Code's
+`Stop` hook, calling it a "finish boundary". It isn't one: `Stop` fires when the agent finishes
+responding — the end of *every* turn, including one that only answered a question or talked through an
+open `Q-N`. No harness exposes a "the next workflow step was invoked" event. Worse, a `Stop` hook that
+exits 2 doesn't warn — it *blocks the agent from stopping* and feeds stderr back as an instruction to
+continue, so an ordinary conversational turn became a forced continuation. The wiring is gone, and
+`apm install` removes it from projects that still have it. The check scripts additionally honor the
+harness's `stop_hook_active` flag, so a stale hook left over anywhere can't loop.
 
 Known, accepted asymmetries — documented, not hidden:
 
-- **`git commit --no-verify` bypasses the git floor.** A harness without a finish hook has no second
-  net, so a bypassed commit there is unchecked.
+- **`git commit --no-verify` bypasses the git gate.** It is the only enforcement layer, so a bypassed
+  commit is unchecked.
 - **`core.hooksPath` is per-clone.** `git clone` does **not** copy `.git/config`, so a fresh clone has
   no git enforcement until someone re-runs `apm install`. (The `.spec-workflow/` scripts are
   committed and travel with the repo; only the *activation* is local.)
@@ -198,6 +203,26 @@ Known, accepted asymmetries — documented, not hidden:
   lefthook, an org secret-scanner), the installer will **not** overwrite it — it warns and prints how
   to chain the spec-workflow checks from your existing hook. Opt out permanently with
   `touch .spec-workflow/.no-git-hooks`.
+
+### Testing the enforcement machinery
+
+The checks are the part of this package that can silently break a consumer's workflow, so they have a
+behavioural test suite. It runs the **shipped** scripts in `.apm/scripts/` against throwaway git
+fixtures in a temp dir — nothing is installed and your repo is untouched:
+
+```bash
+bash tests/enforcement.test.sh     # exit 0 = all passed
+```
+
+It covers the status / AC / open-question state machine, the spec-versioning substantive-change rules
+and every documented exemption, the `stop_hook_active` safety net, the `pre-commit` wrapper (blocking,
+`--no-verify`, and the `checks.sha256` integrity gate), and the installer's hook reconciliation and
+retired-file pruning. Only `git` and `bash` are needed; the sections that need `jq` skip themselves
+without it. This is repo-only tooling — it lives outside `.apm/`, so it is never packed or deployed.
+
+Run it before publishing a version. If you change a check's behaviour on purpose, update the matching
+assertion in the same commit — an assertion that no longer describes the intended contract is worse
+than no assertion.
 
 ## Running unattended
 
@@ -225,7 +250,7 @@ written list of everything it had to decide for you:
 You answer by filling in `**Answer:**` — your choice, or `confirmed` to accept the assumption.
 
 **Nothing built on a guess can move forward.** An empty `**Answer:**` is a ceiling on the spec's
-status, enforced by `check-open-questions.sh` at the same two layers as every other check:
+status, enforced by `check-open-questions.sh` at the same pre-commit gate as every other check:
 
 | An unanswered question in | holds the spec at |
 |---|---|

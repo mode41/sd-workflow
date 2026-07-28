@@ -1,0 +1,6 @@
+{
+  "$comment": "Harness-neutral metadata for the spec-workflow enforcement checks. emit-harness-hooks.sh reads 'hooksDir' from here. WHICH checks run is deliberately NOT listed — it is discovered from the deployed check-*.sh set in hooksDir by the pre-commit's own glob, so the two can never disagree. The checks bind to ONE boundary, the git pre-commit hook: a commit is a real workflow boundary and git works for any tool or none. No harness session-end hook is emitted — see emit-harness-hooks.sh for why Claude Code's `Stop` was the wrong binding, and how the old wiring is removed from existing installs.",
+  "event": "pre-commit",
+  "description": "Spec-Driven Development close-out / status-sync / version / open-questions guards. Blocks a commit while a SPEC-* spec's acceptance criteria, status, version, or open questions have drifted.",
+  "hooksDir": ".spec-workflow/hooks"
+}

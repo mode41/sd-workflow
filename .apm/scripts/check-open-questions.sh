@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# SPEC open-questions guard (finish-boundary hook + git pre-commit): a question a command could not
+# SPEC open-questions guard (git pre-commit): a question a command could not
 # ask you — recorded as a '### Q-N' block under '## Open Questions' with an empty '**Answer:**' —
 # holds the spec at the phase that raised it. This is what makes unattended runs safe: a command in
 # `interaction.mode: "file"` proceeds on a flagged assumption so nothing hangs, but the NEXT phase
@@ -22,6 +22,12 @@
 # branch-gated checks — because questions are raised by /requirements and /technical-design, which run
 # before a SPEC-N branch exists. It stays quiet by acting only on specs that actually changed vs HEAD.
 # Deprecated specs are exempt (a tombstone keeps whatever it had).
+#
+# Stale session-end hook safety net (see check-ac-closeout.sh).
+if [ -z "${SPEC_WORKFLOW_ROOT:-}" ] && [ ! -t 0 ]; then
+  read -r -t 1 -d '' _hookjson || true
+  [[ "$_hookjson" =~ \"stop_hook_active\"[[:space:]]*:[[:space:]]*true ]] && exit 0
+fi
 #
 # Agent-agnostic root resolution (see check-ac-closeout.sh).
 dir="${SPEC_WORKFLOW_ROOT:-${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || echo "$PWD")}}"
@@ -78,9 +84,9 @@ bad=0
 note() { echo "Open-questions check: $1" >&2; bad=1; }
 fmt()  { printf '%s' "$1" | tr '\n' ' ' | sed 's/ $//'; }   # "Q-1 Q-3"
 
-# Everything touched since HEAD under a pathspec. Untracked files are included deliberately: at the
-# finish-boundary an agent has usually written tech-design.md but not staged it, and `git diff HEAD`
-# alone would not see it.
+# Everything touched since HEAD under a pathspec. Untracked files are included deliberately: an agent
+# often writes tech-design.md as a brand-new file and stages only part of the spec folder, and
+# `git diff HEAD` alone would not see it.
 touched() { git -C "$dir" diff --name-only HEAD -- "$@" 2>/dev/null
             git -C "$dir" ls-files --others --exclude-standard -- "$@" 2>/dev/null; }
 

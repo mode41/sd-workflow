@@ -79,9 +79,13 @@ So `/technical-design` must **refuse to run** on a spec whose `spec.md` still ha
 question, and implementation must not start while `tech-design.md` has one. Check before you start,
 and say which `Q-N` is blocking.
 
-`.spec-workflow/hooks/check-open-questions.sh` enforces this as a finish-boundary hook and a git
-pre-commit check, so an agent that skips the courtesy check is still stopped. Resolve a block by
-answering the question, or by rolling the status back — never by deleting a question you raised.
+`.spec-workflow/hooks/check-open-questions.sh` enforces this as a git pre-commit check, so an agent
+that skips the courtesy check is still stopped at commit time. Resolve a block by answering the
+question, or by rolling the status back — never by deleting a question you raised.
+
+An open question is a *ceiling*, and nothing imposes a conflicting floor: you may sit on the `SPEC-N`
+branch at `🔵 In Planning` for as long as the question is open, and discuss it freely. No hook fires
+while you are talking it through — they run only when you commit.
 
 Writing or answering a question is **not** a substantive change: `check-spec-version.sh` exempts the
 whole `## Open Questions` section, so a spec at `🟣 Planned` or later needs no version bump for it.

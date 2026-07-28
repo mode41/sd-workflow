@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# SPEC spec-version guard (finish-boundary hook + git pre-commit): once a spec is Planned-or-later,
+# SPEC spec-version guard (git pre-commit): once a spec is Planned-or-later,
 # any *substantive* change to its CONTRACT (spec.md) or its DESIGN (tech-design.md) must bump the
 # spec's '**Version:**' (vN) and add a '## Changelog' row — both of which live in spec.md — so the
 # spec's evolution stays traceable. Deprecating a spec (status -> Deprecated) likewise requires a
@@ -17,6 +17,12 @@
 # HEAD, or it is already 'Deprecated' at HEAD (a frozen tombstone). Runs on any branch — unlike the
 # other two hooks it is not branch-gated, because cross-spec edits are the whole point; it stays quiet
 # by only acting on specs that actually changed.
+#
+# Stale session-end hook safety net (see check-ac-closeout.sh).
+if [ -z "${SPEC_WORKFLOW_ROOT:-}" ] && [ ! -t 0 ]; then
+  read -r -t 1 -d '' _hookjson || true
+  [[ "$_hookjson" =~ \"stop_hook_active\"[[:space:]]*:[[:space:]]*true ]] && exit 0
+fi
 #
 # Agent-agnostic root resolution (see check-ac-closeout.sh).
 dir="${SPEC_WORKFLOW_ROOT:-${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || echo "$PWD")}}"

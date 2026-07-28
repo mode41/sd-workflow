@@ -33,7 +33,7 @@ if [ -f "$SELF/checks.sha256" ]; then
 fi
 
 # Run every deployed check. The installer deploys (and prunes) this set, so there is no list to keep
-# in sync here. Deliberately a glob and not a read of finish-hook.spec.json: that would need jq, and
+# in sync here. Deliberately a glob and not a read of checks.spec.json: that would need jq, and
 # this hook runs at commit time on any machine, not just where the installer ran.
 rc=0
 for script in "$SELF"/check-*.sh; do

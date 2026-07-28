@@ -1,7 +1,19 @@
 #!/usr/bin/env bash
-# SPEC close-out guard (finish-boundary hook + git pre-commit): once a spec's close-out writeup
-# exists, block until its acceptance-criteria boxes are ticked or explicitly marked DESCOPED. Stays
-# silent during requirements/design/mid-implementation (no "## Implementation" section yet).
+# SPEC close-out guard (git pre-commit): once a spec's close-out writeup exists, block until its
+# acceptance-criteria boxes are ticked or explicitly marked DESCOPED. Stays silent during
+# requirements/design/mid-implementation (no implementation.md yet).
+#
+# STALE SESSION-END HOOK SAFETY NET. These checks are enforced at the git pre-commit boundary, and the
+# installer no longer wires any harness session-end hook (a Claude Code `Stop` hook fires at the end of
+# EVERY turn, not at a workflow step, so it blocked ordinary conversation). An older install may still
+# have one wired. When such a hook re-invokes us after a previous block, the harness passes
+# stop_hook_active:true on stdin — honor it, so a condition we cannot repair can never become an
+# unbounded block loop. Skipped under the pre-commit, which sets SPEC_WORKFLOW_ROOT and never feeds us
+# JSON on stdin; the `-t 0` test keeps an interactive invocation from waiting on a terminal.
+if [ -z "${SPEC_WORKFLOW_ROOT:-}" ] && [ ! -t 0 ]; then
+  read -r -t 1 -d '' _hookjson || true
+  [[ "$_hookjson" =~ \"stop_hook_active\"[[:space:]]*:[[:space:]]*true ]] && exit 0
+fi
 #
 # Agent-agnostic root resolution: honor an explicit SPEC_WORKFLOW_ROOT / a harness project-dir env
 # (e.g. CLAUDE_PROJECT_DIR), else the git top-level, else PWD.
@@ -24,7 +36,7 @@ grep -m1 '^\*\*Status:\*\*' "$file" | grep -qi 'Deprecated' && exit 0
 [[ -f "${specdir}implementation.md" ]] || exit 0
 # Fire only if an unchecked AC remains that is NOT marked descoped.
 if grep -E '^- \[ \] AC-' "$file" | grep -qvi 'descoped'; then
-  echo "Close-out check for ${id} (${file}): unchecked AC boxes remain. Before finishing, tick each satisfied AC as [x], mark any intentionally-skipped one DESCOPED (leave it [ ]), and update the specs/INDEX.md status." >&2
+  echo "Close-out check for ${id} (${file}): unchecked AC boxes remain. Before committing, tick each satisfied AC as [x], mark any intentionally-skipped one DESCOPED (leave it [ ]), and update the specs/INDEX.md status." >&2
   exit 2
 fi
 exit 0

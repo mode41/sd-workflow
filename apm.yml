@@ -5,10 +5,10 @@
 # and deploys the shared primitives only to those. A consumer may pin `targets:` or use
 # `--target` if they want to override auto-detection.
 name: spec-driven-workflow
-version: 0.4.0
+version: 0.5.0
 description: >-
   Agent-agnostic Spec-Driven Development workflow — spec lifecycle, versioning,
-  reviewer agents, security rules, and self-enforcing git + per-harness hooks.
+  reviewer agents, security rules, and a self-enforcing git pre-commit gate.
   One source of truth; APM compiles the shared primitives into whichever agent
   harness a project uses.
 author: mode41
@@ -18,8 +18,8 @@ license: MIT
 includes: auto
 
 # init-and-wire.sh is our own seeder + PER-AGENT COMPILER: idempotent; seeds live files only if
-# absent, deploys the enforcement machinery into a committed .spec-workflow/ dir, detect-and-
-# preserves core.hooksPath, and emits each present harness's native finish hook. (We do NOT use
+# absent, deploys the enforcement machinery into a committed .spec-workflow/ dir, and detect-and-
+# preserves core.hooksPath so the pre-commit gate is the one enforcement boundary. (We do NOT use
 # APM's hook primitive — its hook compilation is unreliable today.)
 #
 # IMPORTANT (verified on APM 0.25.0): this lifecycle block only fires when THIS package is the
@@ -30,7 +30,7 @@ includes: auto
 lifecycle:
   post-install:
   - type: command
-    description: 'Seed spec-workflow living files, deploy enforcement hooks, wire git + per-harness finish hooks (idempotent).'
+    description: 'Seed spec-workflow living files, deploy the enforcement checks, wire the git pre-commit gate (idempotent).'
     command: 'bash .apm/scripts/init-and-wire.sh'
     timeoutSec: 60
 

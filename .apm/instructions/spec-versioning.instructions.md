@@ -32,9 +32,9 @@ and makes its evolution traceable inline. The rules:
   (kept updated by the workflow steps; not itself hook-enforced — the spec header + changelog are
   the source of truth).
 
-The shared `.spec-workflow/hooks/check-spec-version.sh` (run as a per-harness finish-boundary hook and
-a git pre-commit check) blocks finishing/committing when a Planned-or-later spec changed
-substantively — or was deprecated — without a version bump + a new changelog row.
+The shared `.spec-workflow/hooks/check-spec-version.sh` (run as a git pre-commit check) blocks
+committing when a Planned-or-later spec changed substantively — or was deprecated — without a version
+bump + a new changelog row.
 
 **Git still holds implementation history:** the inline changelog records *spec-level* evolution; code
 -level detail lives in git commits (`git log --grep="SPEC-1"`). There is no separate changelog file —

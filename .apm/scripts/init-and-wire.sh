@@ -13,7 +13,8 @@
 #      subagents this version introduces, retires (never deletes) entries for ones it no longer ships,
 #      and prompts for any model left unset.
 #   6. Wires git core.hooksPath with DETECT-AND-PRESERVE (never silently steals an existing value).
-#   7. Emits each present harness's native finish hook and stamps each agent's configured model
+#   7. Reconciles each present harness's native hooks (today: removes the session-end hook older
+#      versions wired — see emit-harness-hooks.sh) and stamps each agent's configured model
 #      (delegates to emit-harness-hooks.sh / emit-agent-models.sh).
 #   8. Collects every thing it could NOT do (via a cross-process notice sink shared with the emit-*.sh
 #      scripts) into a persisted checklist at .spec-workflow/MANUAL-STEPS.md, and prints a summary.
@@ -59,8 +60,18 @@ for deployed in "$SW/hooks/"check-*.sh; do
   [ -e "$deployed" ] || continue
   [ -e "$SELF/$(basename "$deployed")" ] || { rm -f "$deployed"; echo "  [prune]  removed stale hook $(basename "$deployed")"; }
 done
+
+# Managed files this package USED to deploy into .spec-workflow/ and no longer ships. The check-*.sh
+# prune above is glob-driven and cannot see these, so retired names are listed explicitly — one line
+# per retirement, removed again once no install can plausibly still carry it. Only ever list files
+# that were MANAGED (installer-owned); never a seeded/living one.
+for retired in finish-hook.spec.json; do
+  [ -e "$SW/$retired" ] || continue
+  rm -f "$SW/$retired"; echo "  [prune]  removed retired $retired (renamed to checks.spec.json)"
+done
+
 cp "$SELF"/check-*.sh "$SELF/pre-commit" "$SW/hooks/"
-cp "$SELF/finish-hook.spec.json" "$SW/"
+cp "$SELF/checks.spec.json" "$SW/"
 cp "$PKG/templates/spec.template.md" "$PKG/templates/INDEX.template.md" "$PKG/templates/PRD.template.md" "$PKG/templates/context-map.template.md" "$SW/templates/" 2>/dev/null || true
 chmod +x "$SW/hooks/"*.sh "$SW/hooks/pre-commit" 2>/dev/null || true
 
@@ -251,8 +262,8 @@ else
   notice_add "Not a git work-tree — the pre-commit gate could not be wired. Run 'git init' then re-run the installer."
 fi
 
-# --- 7. Emit per-harness native finish hooks, then stamp each agent's configured model ---
-bash "$SELF/emit-harness-hooks.sh" "$ROOT" "$SW" || { echo "  [hooks]  per-harness hook emit reported an issue (git floor still enforces)"; notice_add "Per-harness finish-hook emit failed — the git pre-commit floor still enforces, but no native session-end hook was written. Re-run the installer after resolving the error above."; }
+# --- 7. Reconcile per-harness native hooks, then stamp each agent's configured model ---
+bash "$SELF/emit-harness-hooks.sh" "$ROOT" "$SW" || { echo "  [hooks]  per-harness hook reconcile reported an issue (git pre-commit still enforces)"; notice_add "Per-harness hook reconcile failed — the git pre-commit gate still enforces the checks. If an older install wired a spec-workflow 'Stop' hook into .claude/settings.json it may still be there, firing at the end of every turn; re-run the installer after resolving the error above, or remove those entries by hand."; }
 # Runs every time on purpose: apm update overwrites the deployed agent files, so this re-applies
 # the configured models afterwards.
 [ "$CONFIG_OK" -eq 1 ] && { bash "$SELF/emit-agent-models.sh" "$ROOT" "$PKG" "$CONFIG" || { echo "  [models] model stamping reported an issue (agents fall back to the harness default)"; notice_add "Model stamping failed — reviewer agents fall back to the harness default. Re-run the installer after resolving the error above."; }; }

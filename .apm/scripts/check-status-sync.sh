@@ -1,11 +1,18 @@
 #!/usr/bin/env bash
-# SPEC status-sync guard (finish-boundary hook + git pre-commit): on a SPEC-* branch, keep the spec's
-# status accurate and consistent. Blocks (exit 2) when the spec header status and the specs/INDEX.md
-# row disagree, use an off-legend word, or lag reality (a section/close-out implies a further state
-# than the status claims). Validate-only: it never edits — the stderr message tells the agent to
-# RESOLVE the drift (investigate the true state, then set the same status in BOTH places), because an
-# agent can determine the correct value where a blind auto-sync would guess.
-# Silent (exit 0) off a SPEC-* branch or when the spec has no file yet.
+# SPEC status-sync guard (git pre-commit): on a SPEC-* branch, keep the spec's status accurate and
+# consistent. Blocks (exit 2) when the spec header status and the specs/INDEX.md row disagree, use an
+# off-legend word, or lag reality (close-out evidence implies a further state than the status claims).
+# Validate-only: it never edits — the stderr message tells the agent to RESOLVE the drift (investigate
+# the true state, then set the same status in BOTH places), because an agent can determine the correct
+# value where a blind auto-sync would guess.
+# Silent (exit 0) off a SPEC-* branch or when the spec has no file yet. The branch is how this check
+# learns WHICH spec to judge — it is a selector, never evidence about the spec's phase (see below).
+#
+# Stale session-end hook safety net (see check-ac-closeout.sh).
+if [ -z "${SPEC_WORKFLOW_ROOT:-}" ] && [ ! -t 0 ]; then
+  read -r -t 1 -d '' _hookjson || true
+  [[ "$_hookjson" =~ \"stop_hook_active\"[[:space:]]*:[[:space:]]*true ]] && exit 0
+fi
 #
 # Agent-agnostic root resolution (see check-ac-closeout.sh).
 dir="${SPEC_WORKFLOW_ROOT:-${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || echo "$PWD")}}"
@@ -50,15 +57,20 @@ idx=$(grep -m1 -E "^\| ${id} \|" "$index" | awk -F'|' '{print $5}' | grep -oE "$
 [[ "$hdr" == "Deprecated" ]] && exit 0
 
 # --- Reality floors (strongest first) ---
+# ARTIFACT EVIDENCE ONLY. A floor fires when a file in the spec folder PROVES the work has moved past
+# the claimed status. Being on the SPEC-N branch is deliberately NOT such evidence: cutting the branch
+# early — to plan on it, to park a draft, to answer an open question — is normal and says nothing about
+# whether implementation started. A branch-implies-'In Progress' floor also deadlocks against
+# check-open-questions.sh, which CAPS a spec with an unanswered Q-N at 'In Planning': on a SPEC-N branch
+# with an open question no status could satisfy both, and the two checks handed the agent contradictory
+# repair instructions forever. Do not reintroduce it.
 r=$(rank "$hdr")
-closeout=0; [[ -f "${specdir}implementation.md" ]] && closeout=1
-# close-out complete = implementation.md exists AND no unchecked non-DESCOPED AC remains in spec.md
-if [[ "$closeout" == "1" ]] && ! grep -E '^- \[ \] AC-' "$file" | grep -qvi 'descoped'; then
-  [[ "$hdr" == "Validated" ]] || block "close-out is complete (implementation.md present, all ACs ticked/DESCOPED) but status is '${hdr}'. Set both ${label} and its INDEX row to 'Validated'."
-elif [[ "$closeout" == "1" ]]; then
-  (( r >= 3 )) || block "an implementation.md (close-out evidence) exists (verification underway) but status is '${hdr}'. Advance both ${label} and its INDEX row to at least 'In Review'."
-else
-  # On a SPEC-N branch with no implementation.md yet ⇒ implementation has started.
-  (( r >= 2 )) || block "you are on the ${id} implementation branch but status is '${hdr}'. Set both ${label} and its INDEX row to 'In Progress' (or further, if verification/close-out has begun)."
+if [[ -f "${specdir}implementation.md" ]]; then
+  # close-out complete = implementation.md exists AND no unchecked non-DESCOPED AC remains in spec.md
+  if ! grep -E '^- \[ \] AC-' "$file" | grep -qvi 'descoped'; then
+    [[ "$hdr" == "Validated" ]] || block "close-out is complete (implementation.md present, all ACs ticked/DESCOPED) but status is '${hdr}'. Set both ${label} and its INDEX row to 'Validated'."
+  else
+    (( r >= 3 )) || block "an implementation.md (close-out evidence) exists (verification underway) but status is '${hdr}'. Advance both ${label} and its INDEX row to at least 'In Review'."
+  fi
 fi
 exit 0

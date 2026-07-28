@@ -22,14 +22,17 @@ plumbing and config.
 `.spec-workflow/` is **mixed**, and each file's ownership is what matters:
 
 - **Managed** — refreshed on every `apm install` / `apm update` (`hooks/`, `templates/`,
-  `config.schema.json`, `finish-hook.spec.json`).
+  `config.schema.json`, `checks.spec.json`).
 - **Seeded once, never clobbered** — yours to edit (`config.json`, `context-map.md`).
 - **Bundle-owned** — written by a bundle or your own tooling (`profiles/`).
 
 > **Guarantee: the core never deletes `.spec-workflow/profiles/`.** The installer only ever creates
-> directories and copies specific files into them; it has no recursive delete. The one exception is
-> deliberate and narrow: it prunes `hooks/check-*.sh` that the installed version no longer ships. A
-> bundle may write into `profiles/` and rely on it surviving every core update.
+> directories and copies specific files into them; it has no recursive delete. The two exceptions are
+> deliberate and narrow, and both are confined to files the core itself deployed: it prunes
+> `hooks/check-*.sh` that the installed version no longer ships, and it removes **managed** files it
+> has explicitly retired by name (currently `finish-hook.spec.json`, renamed to `checks.spec.json` in
+> 0.5.0). Neither can reach a seeded or bundle-owned file. A bundle may write into `profiles/` and
+> rely on it surviving every core update.
 
 ## The profile extension point (frozen)
 
