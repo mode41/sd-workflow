@@ -21,19 +21,21 @@ stay identical in `spec.md` and in `specs/INDEX.md` — the hooks fail your comm
 
 | What happens | You run | Status becomes |
 |---|---|---|
-| Define **what** — user stories, acceptance criteria, edge cases | `/requirements <your idea>` | 🔵 In Planning |
+| Define **what** — user stories, acceptance criteria, edge cases, BDD scenarios | `/requirements <your idea>` | 🔵 In Planning |
 | Design **how** — schema, API contracts, components | `/technical-design SPEC-1` | 🟣 Planned |
 | Two rounds of independent architecture + security review | *(automatic)* | 🟣 Planned |
 | Build it, on the spec's branch | — | 🟡 In Progress |
-| Prove it against the acceptance criteria | `/write-tests SPEC-1` | 🟠 In Review |
+| Prove it against the acceptance criteria and BDD scenarios | `/write-tests SPEC-1` | 🟠 In Review |
 | Tick every criterion, record the test evidence | — | 🟢 Validated |
+
+![Spec lifecycle in sd-workflow — six workflow steps from /requirements to close-out, the spec status each step sets, and the git-hook enforcement layer](docs/sd_workflow_spec_lifecycle.svg)
 
 A spec whose feature no longer exists becomes ⚫ Deprecated and stays as a tombstone — dropped, never
 rewritten, so the history stays traceable. Every spec is versioned with an inline changelog, so you can
 see *why* it changed and which other spec forced it.
 
 📄 **[See a finished spec](docs/example-spec.md)** — one worked example, `Validated` and closed out,
-showing the status header, changelog, ticked acceptance criteria, a descoped one, and the tech design.
+showing the status header, changelog, ticked acceptance criteria, a descoped one, BDD scenarios, and the tech design.
 
 ## What you get
 
@@ -135,7 +137,7 @@ That interviews you about the project, fills in `docs/PRD.md`, and splits the wo
 ```
 /technical-design SPEC-1     → design reviewed by both reviewer agents, written as tech-design.md
                              → implement it on the spec's branch
-/write-tests SPEC-1          → tests written and run against the acceptance criteria
+/write-tests SPEC-1          → tests written and run against the acceptance criteria and BDD scenarios
                              → tick the criteria, record the evidence in audit-trail.md, done
 ```
 
@@ -175,13 +177,13 @@ spec-workflow.supplemental.md  # your workflow tuning, seeded once, never overwr
 
 ## Enforcement — what runs where
 
-The four checks (`check-ac-closeout`, `check-status-sync`, `check-spec-version`,
+The five checks (`check-ac-closeout`, `check-bdd-closeout`, `check-status-sync`, `check-spec-version`,
 `check-open-questions`) run at **one** boundary: the **git pre-commit hook**. It works for any agent
 (or none), because it's git, not an agent feature — and a commit is a real workflow boundary.
 
 It runs whatever `check-*.sh` the installer deployed — there is no list to keep in sync, and a check a
 newer version drops is pruned rather than left behind. A spec parked under
-`specs/backlog/SPEC-N-name/` is held to all four checks, exactly like one in the main tree.
+`specs/backlog/SPEC-N-name/` is held to all five checks, exactly like one in the main tree.
 
 **Why there is no session-end hook.** Earlier versions also merged the checks into Claude Code's
 `Stop` hook, calling it a "finish boundary". It isn't one: `Stop` fires when the agent finishes
