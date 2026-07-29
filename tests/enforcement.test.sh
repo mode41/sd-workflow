@@ -4,9 +4,10 @@
 # Exercises the SHIPPED scripts in .apm/scripts/ (not a deployed copy) against throwaway git
 # fixtures, so a regression shows up here before it reaches a consumer project. Covers:
 #
-#   1. Status / AC / open-question state machine  — the four check-*.sh guards
+#   1. Status / AC / open-question state machine  — check-status-sync / -ac-closeout / -open-questions
+#  1c. BDD-scenario close-out                     — check-bdd-closeout.sh citation gate
 #   2. Spec versioning                            — check-spec-version.sh substantive-change rules
-#   3. Stale session-end hook safety net          — the stop_hook_active guard in all four checks
+#   3. Stale session-end hook safety net          — the stop_hook_active guard in all five checks
 #   4. The pre-commit wrapper                     — blocking, bypass, and the checks.sha256 gate
 #   5. Installer reconciliation                   — Stop-hook unwiring + retired-file prune
 #
@@ -248,6 +249,83 @@ printf '| SPEC-40 | Atlas | v1 | In Planning |\n' >> "$d/specs/INDEX.md"
 run "$d" check-status-sync.sh; is_rc 2 "two drifted specs in one change block"
 says "SPEC-36" "and names the first"
 says "SPEC-40" "and names the second"
+
+###############################################################################
+section "1c. BDD-scenario close-out (check-bdd-closeout.sh)"
+###############################################################################
+# A declared BDD-N scenario must be cited in the audit trail before close-out — the same citation gate
+# as AC, but keyed off the '### BDD-N:' heading (scenarios are multi-line, so there is no per-line
+# checkbox). Silent until audit-trail.md exists; a DESCOPED heading is exempt.
+
+# fixture_bdd <name> <trail-body|-> — seed a spec carrying two BDD scenarios on a work branch; write
+# audit-trail.md from <trail-body> unless it is '-'. The baseline is committed before the trail is
+# written, so the trail stays untracked — what the check sees in real use.
+fixture_bdd() {
+  local d="$WORK/$1"; rm -rf "$d"; mkdir -p "$d/specs/SPEC-52-checkout"
+  git_init "$d"; deploy "$d"
+  cat > "$d/specs/SPEC-52-checkout/spec.md" <<'EOF'
+# SPEC-52 Checkout
+**Status:** In Review
+**Version:** v1
+
+## Acceptance Criteria
+- [x] AC-1 the cart totals
+
+## BDD Scenarios
+
+### BDD-1: empty cart
+**Given** an empty cart
+**When** the user checks out
+**Then** they see "nothing to buy"
+
+### BDD-2: single item
+**Given** one item in the cart
+**When** the user checks out
+**Then** the order is placed
+EOF
+  printf '| ID | Title | V | Status |\n|---|---|---|---|\n| SPEC-52 | Checkout | v1 | In Review |\n' > "$d/specs/INDEX.md"
+  git -C "$d" add -A >/dev/null; git -C "$d" commit -qm baseline
+  git -C "$d" checkout -q -b SPEC-52-work
+  [ "$2" != "-" ] && printf '%s\n' "$2" > "$d/specs/SPEC-52-checkout/audit-trail.md"
+  echo "$d"
+}
+
+echo "  -- silent until the audit trail exists"
+d=$(fixture_bdd bd1 -)
+run "$d" check-bdd-closeout.sh; is_rc 0 "no audit-trail.md: stays silent"
+
+echo "  -- a declared scenario absent from the trail blocks"
+d=$(fixture_bdd bd2 "BDD-1 walked by tests/test_checkout.py::test_empty")
+run "$d" check-bdd-closeout.sh; is_rc 2 "an uncited BDD-2 blocks"
+says "BDD-2" "and names the uncited scenario"
+
+echo "  -- every scenario cited passes"
+d=$(fixture_bdd bd3 "BDD-1 -> tests/test_checkout.py::test_empty; BDD-2 -> tests/test_checkout.py::test_single")
+run "$d" check-bdd-closeout.sh; is_rc 0 "all scenarios cited: passes"
+
+echo "  -- BDD-10 in the trail does not satisfy BDD-1"
+d=$(fixture_bdd bd4 "BDD-10 and BDD-20 were done")
+run "$d" check-bdd-closeout.sh; is_rc 2 "a higher-numbered scenario does not satisfy BDD-1"
+says "BDD-1" "and still names BDD-1"
+
+echo "  -- a DESCOPED scenario owes the trail nothing"
+d=$(fixture_bdd bd5 "BDD-1 -> tests/test_checkout.py::test_empty")
+s="$d/specs/SPEC-52-checkout/spec.md"
+sed -i.bak 's/### BDD-2: single item/### BDD-2: single item (DESCOPED) — moved to SPEC-60/' "$s"; rm -f "$s.bak"
+run "$d" check-bdd-closeout.sh; is_rc 0 "a DESCOPED BDD-2 is exempt; only BDD-1 needed citing"
+
+echo "  -- a Deprecated spec is exempt"
+d=$(fixture_bdd bd6 "nothing was walked")
+s="$d/specs/SPEC-52-checkout/spec.md"
+sed -i.bak 's/^\*\*Status:\*\* In Review/**Status:** Deprecated/' "$s"; rm -f "$s.bak"
+run "$d" check-bdd-closeout.sh; is_rc 0 "a Deprecated tombstone is exempt from BDD close-out"
+
+echo "  -- the stale session-end hook safety net applies here too"
+d=$(fixture_bdd bd7 "nothing cited")
+run_as_hook "$d" check-bdd-closeout.sh '{"stop_hook_active":false}'
+is_rc 2 "blocks on the first fire"
+run_as_hook "$d" check-bdd-closeout.sh '{"stop_hook_active":true}'
+is_rc 0 "goes quiet when stop_hook_active is true"
 
 ###############################################################################
 section "2. Spec versioning (check-spec-version.sh)"

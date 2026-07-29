@@ -39,6 +39,17 @@ the code does not say on its own — a deviation from `tech-design.md`, a workar
 |----|----------|-------|
 | EC-1 | _what proves it_ | `path/to/test::test_name` |
 
+## BDD Scenarios — evidence
+
+<!-- One row per BDD-N declared in spec.md, except those whose heading is marked DESCOPED. Name the
+     actual test that walks the scenario's Given/When/Then — a reader must be able to open it and see
+     the behaviour exercised. check-bdd-closeout.sh blocks the commit if a declared BDD-N is missing
+     here. -->
+
+| BDD | Evidence | Where |
+|-----|----------|-------|
+| BDD-1 | _what proves it_ | `path/to/test::test_name` |
+
 ## Test run
 
 <!-- The result as observed, not as expected. If something is skipped, flaky, or unverifiable in

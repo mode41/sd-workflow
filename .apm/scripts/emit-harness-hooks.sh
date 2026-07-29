@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # emit-harness-hooks.sh — the PER-HARNESS HOOK RECONCILER.
 #
-# The four check-*.sh guards are enforced at ONE boundary: the git pre-commit hook (see hooks/pre-commit).
+# The check-*.sh guards are enforced at ONE boundary: the git pre-commit hook (see hooks/pre-commit).
 # No harness session-end hook is emitted, and this script REMOVES any we wired in an earlier version.
 #
 # Why we stopped emitting one. We used to merge the checks into Claude Code's `Stop` hook, calling it a

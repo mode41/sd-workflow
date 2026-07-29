@@ -1,5 +1,5 @@
 ---
-description: Create detailed specs with user stories, acceptance criteria, and edge cases. Use when starting a new project or adding a spec. Argument — a project description or a spec idea.
+description: Create detailed specs with user stories, acceptance criteria, edge cases, and BDD scenarios. Use when starting a new project or adding a spec. Argument — a project description or a spec idea.
 ---
 
 # Requirements Engineer
@@ -96,7 +96,8 @@ verification), and any attachments the spec refers to (`mockups/`, `source/` for
 For each spec (in `ask` mode, after user approval of the breakdown):
 - Create the folder `specs/SPEC-X-spec-name/` and write `spec.md` from
   `.spec-workflow/templates/spec.template.md`
-- Include user stories, acceptance criteria, and edge cases
+- Include user stories, acceptance criteria, edge cases, and BDD scenarios (Given/When/Then, one per
+  `BDD-N` — each must later be proven in `audit-trail.md`, so keep them concrete and testable)
 - Document dependencies on other specs
 
 ### Phase 5: Update Tracking
@@ -258,6 +259,7 @@ adds on top:
 - [ ] At least 3-5 user stories defined
 - [ ] Every acceptance criterion is testable (not vague)
 - [ ] At least 3-5 edge cases documented
+- [ ] BDD scenarios written in Given/When/Then, each concrete enough to prove with a test
 - [ ] Spec ID assigned (SPEC-X)
 - [ ] Spec folder created with `spec.md` at `specs/SPEC-X-spec-name/spec.md`
 - [ ] `specs/INDEX.md` updated

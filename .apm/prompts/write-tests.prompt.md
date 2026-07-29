@@ -15,16 +15,17 @@ The exact testing stack is **project-specific**. The concrete framework, runner,
 commands come from **discovery** (and, if present, an optional stack profile — see step 4). Never
 assume a framework the project has not established.
 
-**Where this fits:** writing and running tests against the acceptance criteria is the **In Review**
-phase of the workflow. A spec is `In Review` while verification is underway; green tests plus every
-acceptance criterion exercised are what gate the move to `Validated` at close-out. This command
+**Where this fits:** writing and running tests against the acceptance criteria and BDD scenarios is
+the **In Review** phase of the workflow. A spec is `In Review` while verification is underway; green
+tests plus every acceptance criterion and BDD scenario exercised are what gate the move to `Validated`
+at close-out. This command
 produces that evidence and records it in the spec's `audit-trail.md` (Phase 5) — the workflow steps
 set the status.
 
 ## Before Starting
 
 1. Parse the input: either a `SPEC-X` spec ID or a file path
-2. If `SPEC-X`: read the spec folder `specs/SPEC-X-*/` — `spec.md` (acceptance criteria) and `tech-design.md`
+2. If `SPEC-X`: read the spec folder `specs/SPEC-X-*/` — `spec.md` (acceptance criteria, edge cases, and BDD scenarios) and `tech-design.md`
 3. Read the project memory (`AGENTS.md` / your harness's memory file) and any module-level
    conventions for the project's testing norms
 4. **Consult `.spec-workflow/profiles/stack.md` if it exists** — a capability bundle or your own stack-init tool
@@ -64,6 +65,12 @@ Analyze the changed/new code and categorize what needs testing:
 ### Repository / data-access layer → Integration Tests
 - Custom queries (correctness of hand-written queries)
 - Modifying queries (flush/clear or equivalent behavior)
+
+### BDD scenarios → Scenario / Integration Tests
+- For each `BDD-N` in `spec.md`, write a test whose arrange / act / assert mirror the scenario's
+  **Given / When / Then**. Prefer the integration layer when the scenario crosses real dependencies
+  (DB, HTTP, filesystem); a pure-logic scenario can live at the unit layer.
+- A scenario whose heading is marked `(DESCOPED)` won't ship — skip it; it is exempt from the gate.
 
 ## Phase 2: Write Unit Tests
 
@@ -123,9 +130,10 @@ profile if present, else discover them from the project's build configuration:
 
 **Only when invoked with a `SPEC-X`** (a bare file path has no spec to record against). Write
 `specs/SPEC-X-*/audit-trail.md` from `.spec-workflow/templates/audit-trail.template.md`. This is the
-spec's verification record and the only place the **AC → evidence** mapping lives: `spec.md` says a
-criterion is met, the trail says which test proves it. `check-ac-closeout.sh` blocks the commit if an
-AC ticked in `spec.md` is never cited there.
+spec's verification record and the only place the **AC → evidence** and **BDD → evidence** mappings
+live: `spec.md` says a criterion is met or a scenario holds, the trail says which test proves it.
+`check-ac-closeout.sh` blocks the commit if an AC ticked in `spec.md` is never cited there, and
+`check-bdd-closeout.sh` blocks it if a declared `BDD-N` (not marked DESCOPED) is never cited.
 
 Read the mechanical facts out of git rather than from memory:
 
@@ -134,8 +142,10 @@ Read the mechanical facts out of git rather than from memory:
 - `git diff --name-only <base>..HEAD` — what the range touched
 
 Then fill in what git cannot know: one row per AC naming the actual test (`path::test_name`, openable
-by a reader), the same for each EC, and the test run **as observed** — the real command, the real
-counts, and any skip, flake, or environment limit. An honest gap is worth more than a green claim.
+by a reader), the same for each EC, one per non-DESCOPED `BDD-N` mapping the scenario to the test that
+walks its Given/When/Then, and the test run **as observed** — the real command, the real counts, and
+any skip, flake, or environment limit. An honest gap is worth more than a green claim.
+`check-bdd-closeout.sh` blocks the commit if a `BDD-N` declared in `spec.md` is never cited here.
 
 Two rules about timing: do not create this file before there is real evidence for it — its existence
 alone pushes the spec's status floor to **In Review** — and do not tick the AC boxes in `spec.md`
@@ -148,4 +158,4 @@ until the trail cites them, or the commit is blocked.
 - [ ] Tests compile and pass
 - [ ] No test depends on execution order
 - [ ] Test data cleanup is handled consistently with the rest of the suite
-- [ ] `audit-trail.md` written, citing every AC that is ticked in `spec.md` (spec runs only)
+- [ ] `audit-trail.md` written, citing every AC that is ticked in `spec.md` and every non-DESCOPED `BDD-N` (spec runs only)

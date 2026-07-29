@@ -5,8 +5,8 @@ It is the same CSV→Parquet CLI the README's *Start here* section uses.
 
 A spec is a **folder**, not a single file. Reading a finished one is the fastest way to understand
 the workflow, because every convention the hooks enforce is visible at once: the status header, the
-inline changelog, the ticked acceptance criteria, the one deliberately descoped criterion, and the
-verification evidence that justifies calling it done.
+inline changelog, the ticked acceptance criteria, the one deliberately descoped criterion, the BDD
+scenarios, and the verification evidence that justifies calling it done.
 
 You don't write this by hand. `/requirements` creates the folder and `spec.md`, `/technical-design
 SPEC-2` writes `tech-design.md`, and `/write-tests SPEC-2` plus close-out produce `audit-trail.md`.
@@ -83,6 +83,18 @@ against write speed.
 | EC-1 | Input CSV has a header but zero data rows | Write a valid Parquet file carrying the schema and no rows; exit 0 |
 | EC-2 | Output file already exists | Fail with exit 1 and leave the existing file untouched, unless `--force` is passed |
 | EC-3 | A column is empty in every row | Type it as string rather than failing inference |
+
+## BDD Scenarios
+
+### BDD-1: Types survive the round trip
+**Given** a CSV whose reader schema types `amount` as float and `id` as int
+**When** `csv2parquet in.csv out.parquet` runs and the output is read back
+**Then** `amount` reads back as float and `id` as int — neither arrives as a string
+
+### BDD-2: An unknown codec writes nothing
+**Given** an output path that does not yet exist
+**When** the user runs `csv2parquet in.csv out.parquet --compression brotli`
+**Then** the command exits 2 and `out.parquet` was never created
 
 ## Out of Scope
 Reading Parquet, partitioned output, and writing to object storage. Local file → local file only.
@@ -178,6 +190,13 @@ listed here; their reason belongs in the contract.
 | EC-2 | Existing output left byte-identical on exit 1; overwritten on exit 0 with `--force` | `tests/test_cli.py::test_refuses_overwrite` |
 | EC-3 | All-empty column types as string, not a failed inference | `tests/integration/test_roundtrip.py::test_empty_column` |
 
+## BDD Scenarios — evidence
+
+| BDD | Evidence | Where |
+|-----|----------|-------|
+| BDD-1 | 50k-row fixture walks write → read; `amount` asserted float and `id` asserted int on the way back | `tests/integration/test_roundtrip.py::test_types_survive` |
+| BDD-2 | `--compression brotli` exits 2 and no output file exists afterward | `tests/test_cli.py::test_rejects_unknown_codec` |
+
 ## Test run
 
 - Command: `pytest`
@@ -228,6 +247,12 @@ which is why AC-5 explains itself and names the spec that inherited it.
 test path: `spec.md` records the *claim*, the trail records the *evidence*, and neither file can
 assert done on its own. It's also what stops the trail from decaying into a one-line "tests pass" —
 the mapping from criterion to test exists in no other file, so if it isn't written here it is lost.
+
+**BDD scenarios are behaviour, gated like criteria.** The `## BDD Scenarios` block states expected
+behaviour as Given/When/Then, and `check-bdd-closeout.sh` blocks the commit once `audit-trail.md`
+exists if any declared `BDD-N` is never cited there — the same citation gate as an AC, so BDD-1 and
+BDD-2 each name the test that walks them. A scenario that won't ship is exempted by putting
+`(DESCOPED)` in its heading, the way AC-5 is exempted by `DESCOPED` on its line.
 
 **The changelog records why, not just what.** The `Driver` column names the `SPEC-N` whose work
 forced the change — `SPEC-4` widened the writer contract, `SPEC-6` took over row-group tuning — or

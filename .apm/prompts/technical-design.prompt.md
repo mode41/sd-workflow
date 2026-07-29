@@ -96,9 +96,10 @@ Before presenting, check the design against:
 1. **Security invariants** from the architecture & security sources (per the context map — see Before Starting step 3) — flag any violation
 2. **Acceptance criteria** from the spec — every AC must be addressable by the design
 3. **Edge cases** from the spec — the design must handle each one
-4. **Dependency contracts** — the design must be compatible with existing schemas and APIs
+4. **BDD scenarios** from the spec — the design must support each scenario's Given/When/Then
+5. **Dependency contracts** — the design must be compatible with existing schemas and APIs
 
-If any AC or edge case is NOT covered by the design, add it explicitly or flag it as a gap.
+If any AC, edge case, or BDD scenario is NOT covered by the design, add it explicitly or flag it as a gap.
 
 ## Phase 4: Clarifying Questions
 
@@ -140,8 +141,8 @@ a sibling of `spec.md`:
 ...
 ```
 
-Do NOT edit `spec.md`'s contract sections (User Stories, Acceptance Criteria, Edge Cases) — the
-design is its own file now.
+Do NOT edit `spec.md`'s contract sections (User Stories, Acceptance Criteria, Edge Cases, BDD
+Scenarios) — the design is its own file now.
 
 ## Phase 6: Update Shared Artifacts
 
@@ -195,6 +196,7 @@ Present a summary:
 ## Checklist Before Completion
 - [ ] All acceptance criteria from the spec are covered by the design
 - [ ] All edge cases are handled (either by design or explicit fallback)
+- [ ] All BDD scenarios from the spec are supported by the design
 - [ ] Multi-tenancy / row-level isolation respected on every new table (if the project requires it)
 - [ ] API contracts include auth requirements and error responses
 - [ ] Design is consistent with the architecture source's constraints (per the context map)

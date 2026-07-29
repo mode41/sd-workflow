@@ -55,6 +55,24 @@ _One paragraph describing what this spec delivers and why it matters._
 | EC-2 | _What happens when..._ | _Expected outcome_ |
 | EC-3 | _What happens when..._ | _Expected outcome_ |
 
+## BDD Scenarios
+
+<!-- Behavioural scenarios in Given/When/Then. Each is citable by its BDD-N id and, once this spec's
+     audit-trail.md exists, must be proven there — check-bdd-closeout.sh blocks the commit for any
+     declared BDD-N never cited in the trail. A scenario that will NOT ship stays here with
+     "(DESCOPED)" in its heading and a one-line reason; it is then exempt from the gate, the same way
+     a DESCOPED AC is. Delete this section if the spec has no behavioural scenarios. -->
+
+### BDD-1: _Scenario title_
+**Given** _initial context_
+**When** _action occurs_
+**Then** _expected outcome_
+
+### BDD-2: _Scenario title_
+**Given** _..._
+**When** _..._
+**Then** _..._
+
 ## Out of Scope
 _What this spec explicitly does NOT cover._
 
